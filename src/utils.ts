@@ -416,6 +416,47 @@ function sendVideoMessage(
   request(data);
 }
 
+async function sendTemplateMessageWithFlow(
+  destinataire: string,
+  templateName: string,
+  flowId: string,
+  screenName: string,
+  flowTest: string,
+) {
+  const data = {
+    recipient_type: 'individual',
+    messaging_product: 'whatsapp',
+    to: destinataire,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: {
+        code: 'en_US',
+      },
+      components: [
+        {
+          type: 'body',
+          text: 'This is a flows as template demo',
+        },
+        {
+          type: 'buttons',
+          buttons: [
+            {
+              type: 'flow',
+              text: flowTest,
+              flow_id: flowId,
+              navigate_screen: screenName,
+              flow_action: 'navigate',
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  request(data);
+}
+
 export default {
   requestLocation,
   sendLocation,
