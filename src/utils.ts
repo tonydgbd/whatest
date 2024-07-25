@@ -456,8 +456,73 @@ async function sendTemplateMessageWithFlow(
 
   request(data);
 }
+async function sendFlow(
+  flowId: string,
+  destination: string,
+  flowMessageheader: string,
+  flowMessagebody: string,
+  flowMessagefooter: string,
+  flow_token: string,
+) {
+  const data = {
+    recipient_type: 'individual',
+    messaging_product: 'whatsapp',
+    to: destination,
+    type: 'interactive',
+    interactive: {
+      type: 'flow',
+      header: {
+        type: 'text',
+        text: flowMessageheader,
+      },
+      body: {
+        text: flowMessagebody,
+      },
+      footer: {
+        text: flowMessagefooter,
+      },
+      action: {
+        name: 'flow',
+        parameters: {
+          flow_message_version: '3',
+          flow_token: flow_token,
+          flow_id: flowId,
+          flow_cta: 'Pay!',
+          flow_action: 'navigate',
+          flow_action_payload: {
+            screen: 'RECOMMEND',
+          },
+        },
+      },
+    },
+  };
+  request(data);
+}
+
+async function checkPayment(numero: string, montant: number) {
+  const data = {
+    api_key: '2pKOZHdl8SC-_6g4WO94nhmZD2vWfIth',
+    app_id: '91e984af-9993-4aad-9005-f69156333e42',
+    amount: montant,
+    phonenumber: numero,
+    orange: true,
+  };
+
+  const config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: 'https://shark-app-xeyhn.ondigitalocean.app/pay/control/phone_number',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: data,
+  };
+  const res = await axios.request(config);
+  return res.data.success;
+}
 
 export default {
+  checkPayment,
   requestLocation,
   sendLocation,
   sendTemplateMessage,
@@ -473,4 +538,6 @@ export default {
   sendButtonMessage,
   sendListMessage,
   sendVideoMessage,
+  sendTemplateMessageWithFlow,
+  sendFlow,
 };
