@@ -5,8 +5,22 @@ import { config } from 'dotenv';
 import { IncomingHttpHeaders, ServerResponse } from 'http';
 import { WebhookObject } from 'whatsapp/build/types/webhooks';
 import utils from './utils';
-
+// import OpenAI from 'openai';
 config();
+
+// const openai = new OpenAI();
+
+// async function main() {
+//   const assistant = await openai.beta.assistants.create({
+//     name: 'Math Tutor',
+//     instructions:
+//       'You are a personal math tutor. Write and run code to answer math questions.',
+//     tools: [{ type: 'code_interpreter' }],
+//     model: 'gpt-4o',
+//   });
+// }
+
+// main();
 // eslint-disable-next-line @typescript-eslint/no-loss-of-precision
 const senderNumber = 243410425511216;
 // [
@@ -85,6 +99,56 @@ async function custom_callback(
     bd.entry[0].changes[0]['value']['messages'][0]['order']
   ) {
     console.log(bd.entry[0].changes[0]['value']['messages'][0]['order']);
+  }
+  // [
+  //   {
+  //     context: {
+  //       from: '22654963888',
+  //       id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgARGBIzQzM5MkVFQjg1QjAzODI5RTEA'
+  //     },
+  //     from: '22660356506',
+  //     id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgASGBQzQTA3Qjg0RDlBQjlGMjVFMEZENAA=',
+  //     timestamp: '1721983763',
+  //     type: 'interactive',
+  //     interactive: { type: 'button_reply', button_reply: [Object] }
+  //   }
+  // ]
+  if (
+    bd.entry[0].changes[0]['value']['messages'] &&
+    bd.entry[0].changes[0]['value']['messages'][0]['type'] === 'interactive' &&
+    bd.entry[0].changes[0]['value']['messages'][0]['interactive']['type'] ===
+      'button_reply'
+  ) {
+    console.log(
+      bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
+        'button_reply'
+      ],
+    );
+  }
+  // [
+  //   {
+  //     context: {
+  //       from: '22654963888',
+  //       id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgARGBI1NDJGMkNFN0I4NjUxODA2NTcA'
+  //     },
+  //     from: '22660356506',
+  //     id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgASGBQzQTQyQ0M4QTMxODU1NkI5QTBGRgA=',
+  //     timestamp: '1721984205',
+  //     type: 'interactive',
+  //     interactive: { type: 'list_reply', list_reply: [Object] }
+  //   }
+  // ]
+  if (
+    bd.entry[0].changes[0]['value']['messages'] &&
+    bd.entry[0].changes[0]['value']['messages'][0]['type'] === 'interactive' &&
+    bd.entry[0].changes[0]['value']['messages'][0]['interactive']['type'] ===
+      'list_reply'
+  ) {
+    console.log(
+      bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
+        'list_reply'
+      ],
+    );
   }
 
   if (response) {

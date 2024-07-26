@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import axios from 'axios';
-
+import * as fs from 'fs';
+import * as FormData from 'form-data';
+import * as stream from 'stream';
+import { promisify } from 'util';
+import { google } from 'googleapis';
+import { GoogleAuth } from 'google-auth-library';
 const WA_BASE_URL = process.env.WA_BASE_URL || 'graph.facebook.com';
 const M4D_APP_ID = process.env.M4D_APP_ID || '2398012080587850';
 const M4D_APP_SECRET =
@@ -25,6 +30,45 @@ const MAX_RETRIES_AFTER_WAIT = process.env.MAX_RETRIES_AFTER_WAIT
 const REQUEST_TIMEOUT = process.env.REQUEST_TIMEOUT
   ? parseInt(process.env.REQUEST_TIMEOUT)
   : 5000;
+
+const pipeline = promisify(stream.pipeline);
+
+async function uploadImage(imageUrl: string) {
+  const data = new FormData();
+
+  // Télécharger l'image depuis l'URL
+  const response = await axios({
+    url: imageUrl,
+    method: 'GET',
+    responseType: 'stream',
+  });
+
+  // Créer un flux de lecture à partir de l'image téléchargée
+  const imageStream = response.data;
+
+  data.append('messaging_product', 'whatsapp');
+  data.append('file', imageStream, 'image.jpg');
+
+  const config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: `https://graph.facebook.com/${CLOUD_API_VERSION}/${WA_PHONE_NUMBER_ID}/media`,
+    headers: {
+      Authorization: 'Bearer ' + CLOUD_API_ACCESS_TOKEN,
+      ...data.getHeaders(),
+    },
+    data: data,
+  };
+
+  axios
+    .request(config)
+    .then((response) => {
+      console.log(JSON.stringify(response.data));
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
 
 function requestLocation(messageText: string, destinataire: string) {
   const data = JSON.stringify({
@@ -192,7 +236,7 @@ function replyText(
   request(data);
 }
 
-function request(data: any) {
+async function request(data: any) {
   const config = {
     method: 'post',
     maxBodyLength: Infinity,
@@ -326,10 +370,29 @@ function sendProductMessage(
   request(data);
 }
 
-function sendButtonMessage(
+// {
+//   "type": "image",
+//   "image": {
+//     "id": "2762702990552401"
+// }
+// Text header example:
+interface ImageHeader {
+  type: string;
+  image: {
+    id?: number;
+    url?: string;
+  };
+}
+interface TextHeader {
+  type: 'text';
+  text: string;
+}
+async function sendButtonMessage(
   destinataire: string,
   bodyText: string,
   buttons: Array<{ id: string; title: string }>,
+  footerText?: string,
+  header?: TextHeader | ImageHeader,
 ) {
   const data = JSON.stringify({
     messaging_product: 'whatsapp',
@@ -338,17 +401,26 @@ function sendButtonMessage(
     type: 'interactive',
     interactive: {
       type: 'button',
+      header: header,
       body: {
         text: bodyText,
       },
+      footer:
+        footerText != null
+          ? {
+              text: footerText,
+            }
+          : null,
       action: {
-        buttons: buttons.map((button) => ({
-          type: 'reply',
-          reply: {
-            id: button.id,
-            title: button.title,
-          },
-        })),
+        buttons: [
+          ...buttons.map((button) => ({
+            type: 'reply',
+            reply: {
+              id: button.id,
+              title: button.title,
+            },
+          })),
+        ],
       },
     },
   });
@@ -499,6 +571,30 @@ async function sendFlow(
   request(data);
 }
 
+async function uploadImagefromstorage(inagepath: string) {
+  const data = new FormData();
+  data.append('messaging_product', 'whatsapp');
+  data.append('file', fs.createReadStream(inagepath));
+
+  const config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: `https://graph.facebook.com/${CLOUD_API_VERSION}/${WA_PHONE_NUMBER_ID}/media`,
+    headers: {
+      ...data.getHeaders(),
+    },
+    data: data,
+  };
+
+  axios
+    .request(config)
+    .then((response) => {
+      console.log(JSON.stringify(response.data));
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
 async function checkPayment(numero: string, montant: number) {
   const data = {
     api_key: '2pKOZHdl8SC-_6g4WO94nhmZD2vWfIth',
@@ -520,8 +616,262 @@ async function checkPayment(numero: string, montant: number) {
   const res = await axios.request(config);
   return res.data.success;
 }
+async function sendCallToAction(
+  destinataire: string,
+  bodyText: string,
+  footerText: string,
+  callToActionText: string,
+  link: string,
+  linkname: string,
+  headerText?: string,
+) {
+  const data = JSON.stringify({
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: destinataire,
+    type: 'interactive',
+    interactive: {
+      type: 'cta_url',
 
+      /* Header optional */
+      header: headerText
+        ? {
+            type: 'text',
+            text: headerText,
+          }
+        : null,
+
+      /* Body optional */
+      body: {
+        text: bodyText,
+      },
+
+      /* Footer optional */
+      footer: {
+        text: footerText,
+      },
+      action: {
+        name: linkname,
+        parameters: {
+          display_text: callToActionText,
+          url: link,
+        },
+      },
+    },
+  });
+  request(data);
+}
+async function sendPayWithOrange(destinataire: string, montantText: string) {
+  await sendCallToAction(
+    destinataire,
+    'Payez via Orange Money',
+    'securise et rapide',
+    'Lancer le paiement',
+    'tel:*144*10*05690560*' + montantText + '#',
+    'cta_url',
+  );
+}
+
+async function getSheetData() {
+  /**
+   * Gets cell values from a Spreadsheet.
+   * @param {string} spreadsheetId The spreadsheet ID.
+   * @param {string} range The sheet range.
+   * @return {obj} spreadsheet information
+   */
+  // const auth = new GoogleAuth({
+  //   scopes: 'https://www.googleapis.com/auth/spreadsheets',
+  // });
+
+  const service = google.sheets({
+    version: 'v4',
+    auth: 'AIzaSyCCJR3i90PluxHX-NNn7Wp8WAg-o2ETlFw',
+  });
+  try {
+    const result = await service.spreadsheets.values.get({
+      spreadsheetId: '18LqtF3o5V8OASnB4qsQ048Y7f51k0psM8PKSNqVu0dU',
+      range: '5:5',
+    });
+
+    const numRows = result.data.values ? result.data.values.length : 0;
+    console.log(`${numRows} rows retrieved.`);
+    console.log(result.data.values);
+    return result;
+  } catch (err) {
+    // TODO (developer) - Handle exception
+    throw err;
+  }
+}
+
+async function addOrUpdateRow(
+  spreadsheetId: string,
+  sheetName: string,
+  columnName: string,
+  columnValue: string,
+  rowData: any[],
+) {
+  try {
+    const sheets = google.sheets({
+      version: 'v4',
+      auth: 'AIzaSyCCJR3i90PluxHX-NNn7Wp8WAg-o2ETlFw',
+    });
+    // Lire les données existantes de la feuille
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!A:Z`,
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      console.log('No data found.');
+      return;
+    }
+    console.log('Rows: ', rows[1]);
+
+    // Trouver l'index de la colonne
+    const headerRow = rows[1];
+    const columnIndex = headerRow.indexOf(columnName);
+    if (columnIndex === -1) {
+      console.log(`Column ${columnName} not found.`);
+      return;
+    }
+
+    // Rechercher la valeur de la colonne
+    let rowIndex = -1;
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][columnIndex] === columnValue) {
+        rowIndex = i;
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      // Ajouter une nouvelle ligne si la valeur n'existe pas
+      sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: `${sheetName}!A:Z`,
+        valueInputOption: 'RAW',
+      });
+      console.log('Row added.');
+    } else {
+      // Mettre à jour la ligne existante
+      const range = `${sheetName}!A${rowIndex + 1}:Z${rowIndex + 1}`;
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range,
+        valueInputOption: 'RAW',
+      });
+      console.log('Row updated.');
+    }
+  } catch (error) {
+    console.error('Error updating or adding row:', error);
+  }
+}
+function sendCarouselMessage(
+  destinataire: string,
+  templateName: string,
+  languageCode: string,
+  category: string,
+  bubbleText: string,
+  bubbleTextVarExample: string[],
+  cards: {
+    headerFormat: string;
+    headerHandle: string;
+    bodyText: string;
+    bodyTextVarExample: string[];
+    quickReplyButtonText: string;
+    urlButtonText: string;
+    urlButtonUrl: string;
+    urlButtonVarExample: string;
+  }[],
+) {
+  const data = JSON.stringify({
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: destinataire,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: {
+        code: languageCode,
+      },
+      category: category,
+      components: [
+        {
+          type: 'BODY',
+          text: bubbleText,
+          example: {
+            body_text: [bubbleTextVarExample],
+          },
+        },
+        {
+          type: 'CAROUSEL',
+          cards: cards.map((card) => ({
+            components: [
+              {
+                type: 'HEADER',
+                format: card.headerFormat,
+                example: {
+                  header_handle: [card.headerHandle],
+                },
+              },
+              {
+                type: 'BODY',
+                text: card.bodyText,
+                example: {
+                  body_text: [card.bodyTextVarExample],
+                },
+              },
+              {
+                type: 'BUTTONS',
+                buttons: [
+                  {
+                    type: 'QUICK_REPLY',
+                    text: card.quickReplyButtonText,
+                  },
+                  {
+                    type: 'URL',
+                    text: card.urlButtonText,
+                    url: card.urlButtonUrl,
+                    example: [card.urlButtonVarExample],
+                  },
+                ],
+              },
+            ],
+          })),
+        },
+      ],
+    },
+  });
+  const config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: `https://graph.facebook.com/${CLOUD_API_VERSION}/${WA_PHONE_NUMBER_ID}/message_templates`,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + CLOUD_API_ACCESS_TOKEN,
+    },
+    data: data,
+  };
+
+  axios
+    .request(config)
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      throw error;
+    });
+}
 export default {
+  sendCarouselMessage,
+  addOrUpdateRow,
+  getSheetData,
+  sendPayWithOrange,
+  sendInteractiveProductMessage,
+  sendAudio,
+  sendCatalogMessage,
+  sendProductListMessage,
   checkPayment,
   requestLocation,
   sendLocation,
@@ -530,14 +880,13 @@ export default {
   sendImage,
   sendText,
   replyText,
-  sendInteractiveProductMessage,
-  sendAudio,
-  sendCatalogMessage,
-  sendProductListMessage,
   sendProductMessage,
   sendButtonMessage,
   sendListMessage,
   sendVideoMessage,
   sendTemplateMessageWithFlow,
   sendFlow,
+  sendCallToAction,
+  uploadImagefromstorage,
+  uploadImage,
 };
