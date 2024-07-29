@@ -5,24 +5,40 @@ import { config } from 'dotenv';
 import { IncomingHttpHeaders, ServerResponse } from 'http';
 import { WebhookObject } from 'whatsapp/build/types/webhooks';
 import utils from './utils';
+
+const interaction = {
+  button_reply: [
+    {
+      id: '1',
+      handle: function () {
+        console.log('Handle 1');
+      },
+    },
+  ],
+  list_reply: [
+    {
+      id: '1',
+      handle: function () {
+        console.log('Handle 1');
+      },
+    },
+  ],
+  nfm_reply: [
+    {
+      id: 'test',
+      handle: function (data: any) {
+        console.log(data);
+      },
+    },
+  ],
+};
 // import OpenAI from 'openai';
 config();
 
 // const openai = new OpenAI();
 
-// async function main() {
-//   const assistant = await openai.beta.assistants.create({
-//     name: 'Math Tutor',
-//     instructions:
-//       'You are a personal math tutor. Write and run code to answer math questions.',
-//     tools: [{ type: 'code_interpreter' }],
-//     model: 'gpt-4o',
-//   });
-// }
-
 // main();
 // eslint-disable-next-line @typescript-eslint/no-loss-of-precision
-const senderNumber = 243410425511216;
 // [
 //   {
 //     context: {
@@ -36,7 +52,132 @@ const senderNumber = 243410425511216;
 //     interactive: { type: 'nfm_reply', nfm_reply: [Object] }
 //   }
 // ]
-const wa = new WhatsApp(Number(senderNumber));
+async function handleWebhook(
+  statusCode: number,
+  headers: IncomingHttpHeaders,
+  body?: WebhookObject,
+) {
+  if (!body) {
+    console.log('No body in webhook');
+    return;
+  }
+  const bd = JSON.parse(JSON.stringify(body));
+  if (bd.entry[0].changes[0].value.messages === undefined) {
+    console.log('No messages in webhook');
+    return;
+  }
+
+  const messageType = bd.entry[0].changes[0].value.messages[0].type;
+  const from = bd.entry[0].changes[0].value.messages[0].from;
+  console.log(`Received message from ${from} of type ${messageType}`);
+  switch (messageType) {
+    case 'interactive':
+      const interactiveType =
+        bd.entry[0].changes[0]['value']['messages'][0]['interactive']['type'];
+      if (interactiveType === 'nfm_reply') {
+        console.log('Handling nfm reply');
+        handleFlowReply(
+          bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
+            'nfm_reply'
+          ],
+        );
+      } else if (interactiveType === 'button_reply') {
+        handleButtonReply(
+          bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
+            'button_reply'
+          ],
+        );
+      } else if (interactiveType === 'list_reply') {
+        handleListReply(
+          bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
+            'list_reply'
+          ],
+        );
+      }
+      break;
+    case 'order':
+      handleOrder(bd.entry[0].changes[0]['value']['messages'][0]['order']);
+      break;
+    case 'text':
+      console.log('Handling message');
+      handleMessage(bd.entry[0].changes[0]['value']['messages'][0]['text']);
+      // Add your logic to handle messages here
+      break;
+    case 'location':
+      console.log('Handling location');
+      handleLocation(
+        bd.entry[0].changes[0]['value']['messages'][0]['location'],
+      );
+      // Add your logic to handle location here
+      break;
+    default:
+      console.log(`Unhandled message type: ${messageType}`);
+  }
+}
+async function handleLocation(body: any) {
+  console.log('Handling location message');
+  // {
+  //   latitude: 12.0,
+  //   longitude: 13.0,
+  // }
+  console.log(body);
+  // Add your logic to handle location messages here
+}
+async function handleMessage(body: any) {
+  console.log('Handling message');
+  // { text: 'Test' }
+  console.log(body);
+  // Add your logic to handle text messages here
+}
+function handleOrder(body: any) {
+  console.log('Handling order message');
+  // {
+  //   catalog_id: '1772883193117356',
+  //   text: '',
+  //   product_items: [
+  //     {
+  //       product_retailer_id: '2',
+  //       quantity: 1,
+  //       item_price: 750,
+  //       currency: 'XOF'
+  //     }
+  //   ]
+  // }
+  console.log(body);
+  // Add your logic to handle interactive messages here
+}
+
+function handleButtonReply(body: any) {
+  console.log('Handling button reply');
+  // { id: '5496388', title: 'Cancel' }
+  interaction.button_reply.find((element) => element.id === body.id).handle();
+
+  // Add your logic to handle button replies here
+}
+function handleFlowReply(body: any) {
+  console.log('Handling button reply');
+  // {
+  //   response_json: '{"flow_token":"test","numero":"54963888","reseau":"0_ORANGE_Money"}',
+  //   body: 'Sent',
+  //   name: 'flow'
+  // }
+  console.log(body);
+  const response_json = JSON.parse(body.response_json);
+  interaction.nfm_reply
+    .find((element) => element.id === response_json.flow_token)
+    .handle(body.response_json);
+
+  // Add your logic to handle button replies here
+}
+
+function handleListReply(body: any) {
+  console.log('Handling list reply');
+  // { id: '1', title: 'Test', description: 'Test' }
+  interaction.list_reply.find((element) => element.id === body.id).handle();
+  console.log(body);
+
+  // Add your logic to handle list replies here
+}
 
 async function custom_callback(
   statusCode: number,
@@ -71,7 +212,7 @@ async function custom_callback(
         'nfm_reply'
       ]['numero'] === '0_ORANGE_Money';
     utils
-      .checkPayment(numero, 400)
+      .checkPayment(numero, '400')
       .then((result) => {
         console.log(result);
       })
@@ -161,17 +302,12 @@ async function custom_callback(
   }
 }
 
-try {
-  console.log('is started ' + wa.webhooks.isStarted());
-} catch (error) {
-  console.error(error);
-}
-
 async function bootstrap() {
+  const wa = new WhatsApp(Number(process.env.WA_PHONE_NUMBER_ID));
   const app = await NestFactory.create(AppModule);
-  await wa.webhooks.start(custom_callback);
+  await wa.webhooks.start(handleWebhook);
   console.log('is started now ' + wa.webhooks.isStarted());
-
+  // await wa.webhooks.stop((err)=> console.log(err));
   await app.listen(3001);
 }
 bootstrap();

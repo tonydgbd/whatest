@@ -2,13 +2,33 @@ import { Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Request } from 'express';
 import utils from './utils';
+import * as admin from 'firebase-admin';
+import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d1c7.json';
+
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly appService: AppService) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+      databaseURL:
+        'https://fourevent-ea1dc-default-rtdb.europe-west1.firebasedatabase.app',
+    });
+  }
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Get('/hello')
+  async getHello() {
+    const date = new Date();
+    console.log('date', date);
+    const ev = [];
+    const events = await admin
+      .firestore()
+      .collection('events')
+      .where('endDate', '>', date)
+      .get();
+    events.forEach((doc) => {
+      ev.push(doc.data());
+    });
+    return ev;
   }
   @Post('/messages')
   getMessages(req: Request) {
@@ -62,7 +82,7 @@ export class AppController {
     // Importer la fonction (assurez-vous que le chemin est correct)
 
     // Valeurs d'exemple pour les paramètres
-    const destinataire = '1234567890';
+    const destinataire = '22660256506';
     const templateName = 'summer_carousel_promo_2023';
     const languageCode = 'en_US';
     const category = 'MARKETING';
@@ -169,4 +189,7 @@ export class AppController {
   async cta() {
     utils.sendPayWithOrange('22660356506', '2000');
   }
+  // @Post('/flow')
+  // async flow() {
+  // }
 }

@@ -595,7 +595,7 @@ async function uploadImagefromstorage(inagepath: string) {
       console.log(error);
     });
 }
-async function checkPayment(numero: string, montant: number) {
+async function checkPayment(numero: string, montant: string) {
   const data = {
     api_key: '2pKOZHdl8SC-_6g4WO94nhmZD2vWfIth',
     app_id: '91e984af-9993-4aad-9005-f69156333e42',
@@ -605,8 +605,7 @@ async function checkPayment(numero: string, montant: number) {
   };
 
   const config = {
-    method: 'post',
-    maxBodyLength: Infinity,
+    method: 'POST',
     url: 'https://shark-app-xeyhn.ondigitalocean.app/pay/control/phone_number',
     headers: {
       'Content-Type': 'application/json',
@@ -786,40 +785,34 @@ function sendCarouselMessage(
   }[],
 ) {
   const data = JSON.stringify({
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: destinataire,
-    type: 'template',
-    template: {
-      name: templateName,
-      language: {
-        code: languageCode,
-      },
-      category: category,
-      components: [
-        {
-          type: 'BODY',
-          text: bubbleText,
-          example: {
-            body_text: [bubbleTextVarExample],
-          },
+    name: 'summer_carousel_promo_2023',
+    language: 'en_US',
+    category: 'MARKETING',
+    components: [
+      {
+        type: 'BODY',
+        text: 'Summer is here, and we have the freshest produce around! Use code {{1}} to get {{2}} off your next order.',
+        example: {
+          body_text: [['15OFF', '15%']],
         },
-        {
-          type: 'CAROUSEL',
-          cards: cards.map((card) => ({
+      },
+      {
+        type: 'CAROUSEL',
+        cards: [
+          {
             components: [
               {
                 type: 'HEADER',
-                format: card.headerFormat,
+                format: 'IMAGE',
                 example: {
-                  header_handle: [card.headerHandle],
+                  header_handle: ['4::aW...'],
                 },
               },
               {
                 type: 'BODY',
-                text: card.bodyText,
+                text: 'Rare lemons for unique cocktails. Use code {{1}} to get {{2}} off all produce.',
                 example: {
-                  body_text: [card.bodyTextVarExample],
+                  body_text: [['15OFF', '15%']],
                 },
               },
               {
@@ -827,26 +820,63 @@ function sendCarouselMessage(
                 buttons: [
                   {
                     type: 'QUICK_REPLY',
-                    text: card.quickReplyButtonText,
+                    text: 'Send more like this',
                   },
                   {
                     type: 'URL',
-                    text: card.urlButtonText,
-                    url: card.urlButtonUrl,
-                    example: [card.urlButtonVarExample],
+                    text: 'Buy now',
+                    url: 'https://www.luckyshrub.com/shop?promo={{1}}',
+                    example: [
+                      'https://www.luckyshrub.com/shop?promo=summer_lemons_2023',
+                    ],
                   },
                 ],
               },
             ],
-          })),
-        },
-      ],
-    },
+          },
+          {
+            components: [
+              {
+                type: 'HEADER',
+                format: 'IMAGE',
+                example: {
+                  header_handle: ['4::aW...'],
+                },
+              },
+              {
+                type: 'BODY',
+                text: 'Exotic fruit for unique cocktails! Use code {{1}} to get {{2}} off all exotic produce.',
+                example: {
+                  body_text: [['20OFFEXOTIC', '20%']],
+                },
+              },
+              {
+                type: 'BUTTONS',
+                buttons: [
+                  {
+                    type: 'QUICK_REPLY',
+                    text: 'Send more like this',
+                  },
+                  {
+                    type: 'URL',
+                    text: 'Buy now',
+                    url: 'https://www.luckyshrub.com/shop?promo={{1}}',
+                    example: [
+                      'https://www.luckyshrub.com/shop?promo=exotic_produce_2023',
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
   });
   const config = {
     method: 'post',
     maxBodyLength: Infinity,
-    url: `https://graph.facebook.com/${CLOUD_API_VERSION}/${WA_PHONE_NUMBER_ID}/message_templates`,
+    url: `https://graph.facebook.com/${CLOUD_API_VERSION}/${WA_BUSINESS_ACCOUNT_ID}/message_templates`,
     headers: {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + CLOUD_API_ACCESS_TOKEN,
