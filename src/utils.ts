@@ -341,6 +341,29 @@ function sendProductListMessage(
   });
   request(data);
 }
+
+const processedWebhooks = new Set<string>();
+
+async function handleWebhook(webhook: any) {
+  const webhookId = webhook.id;
+
+  // Vérifier si le webhook a déjà été traité
+  if (processedWebhooks.has(webhookId)) {
+    console.log(`Webhook ${webhookId} déjà traité.`);
+    return;
+  }
+
+  // Marquer le webhook comme traité
+  processedWebhooks.add(webhookId);
+
+  // Traiter le webhook
+  try {
+    // Votre logique de traitement ici
+    console.log(`Traitement du webhook ${webhookId}`);
+  } catch (error) {
+    console.error(`Erreur lors du traitement du webhook ${webhookId}:`, error);
+  }
+}
 function sendProductMessage(
   destinataire: string,
   bodyText: string,
@@ -595,25 +618,92 @@ async function uploadImagefromstorage(inagepath: string) {
       console.log(error);
     });
 }
-async function checkPayment(numero: string, montant: string) {
-  const data = {
-    api_key: '2pKOZHdl8SC-_6g4WO94nhmZD2vWfIth',
-    app_id: '91e984af-9993-4aad-9005-f69156333e42',
-    amount: montant,
-    phonenumber: numero,
-    orange: true,
-  };
+async function getDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+) {
+  ///maps/api/distancematrix/json?origins=51.4822656,-0.1933769&destinations=51.4994794,-0.1269979&key=<your_access_token>
+  const API_URL = `https://api.distancematrix.ai/maps/api/distancematrix/json?origins=${lat1},${lon1}&destinations=${lat2},${lon2}&key=SZhwDWCqB39zOBPLByftdXibpS6DEFKfdLa9YcDMQVbzqAl6PKJmOVgKuDUbQx6b`;
+//   {
+//     "destination_addresses": [
+//         "Westminster Abbey, London SW1P 3PA, UK"
+//     ],
+//     "origin_addresses": [
+//         "Chapel, London SW6 1BA, UK"
+//     ],
+//     "rows": [
+//         {
+//             "elements": [
+//                 {
+//                     "distance": {
+//                         "text": "7.6 km",
+//                         "value": 7567
+//                     },
+//                     "duration": {
+//                         "text": "22 mins",
+//                         "value": 1359
+//                     },
+//                     "origin": "51.4822656,-0.1933769",
+//                     "destination": "51.4994794,-0.1269979",
+//                     "status": "OK"
+//                 }
+//             ]
+//         }
+//     ],
+//     "status": "OK"
+// }
 
   const config = {
-    method: 'POST',
-    url: 'https://shark-app-xeyhn.ondigitalocean.app/pay/control/phone_number',
+    method: 'get',
+    maxBodyLength: Infinity,
+    url: API_URL,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+  try {
+    const rs = await axios.get(API_URL);
+    console.log(rs.data);
+
+    return rs.data.rows[0].elements[0].distance;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+async function checkPayment(numero: string, montant: string) {
+  const data = JSON.stringify({
+    api_key: '2pKOZHdl8SC-_6g4WO94nhmZD2vWfIth',
+    app_id: '91e984af-9993-4aad-9005-f69156333e42',
+    amount: Number(montant),
+    phonenumber: '54963888',
+    orange: true,
+  });
+
+  const config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: 'https://ftx-pay.futurix.xyz/pay/control/phone_number/',
     headers: {
       'Content-Type': 'application/json',
     },
     data: data,
   };
-  const res = await axios.request(config);
-  return res.data.success;
+  try {
+    const rs = await axios.request(config);
+    return rs.data;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
 }
 async function sendCallToAction(
   destinataire: string,
@@ -919,4 +1009,5 @@ export default {
   sendCallToAction,
   uploadImagefromstorage,
   uploadImage,
+  getDistance,
 };

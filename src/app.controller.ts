@@ -2,34 +2,13 @@ import { Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Request } from 'express';
 import utils from './utils';
-import * as admin from 'firebase-admin';
-import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d1c7.json';
+
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-      databaseURL:
-        'https://fourevent-ea1dc-default-rtdb.europe-west1.firebasedatabase.app',
-    });
-  }
+  constructor(private readonly appService: AppService) {}
 
-  @Get('/hello')
-  async getHello() {
-    const date = new Date();
-    console.log('date', date);
-    const ev = [];
-    const events = await admin
-      .firestore()
-      .collection('events')
-      .where('endDate', '>', date)
-      .get();
-    events.forEach((doc) => {
-      ev.push(doc.data());
-    });
-    return ev;
-  }
+
   @Post('/messages')
   getMessages(req: Request) {
     console.log(req.body);

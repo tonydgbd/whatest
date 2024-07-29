@@ -5,12 +5,13 @@ import { config } from 'dotenv';
 import { IncomingHttpHeaders, ServerResponse } from 'http';
 import { WebhookObject } from 'whatsapp/build/types/webhooks';
 import utils from './utils';
-
+import { sleep } from 'openai/core';
+//https://www.google.com/maps/search/?api=1&query=47.5951518%2C-122.3316393
 const interaction = {
   button_reply: [
     {
       id: '1',
-      handle: function () {
+      handle: function (from: any) {
         console.log('Handle 1');
       },
     },
@@ -18,7 +19,7 @@ const interaction = {
   list_reply: [
     {
       id: '1',
-      handle: function () {
+      handle: function (from: any) {
         console.log('Handle 1');
       },
     },
@@ -26,7 +27,15 @@ const interaction = {
   nfm_reply: [
     {
       id: 'test',
-      handle: function (data: any) {
+      handle: function (data: any, from: any) {
+        console.log(data);
+      },
+    },
+  ],
+  text_reply: [
+    {
+      trigger: ['salut', 'bonjour'],
+      handle: function (data: any, from: any) {
         console.log(data);
       },
     },
@@ -52,6 +61,7 @@ config();
 //     interactive: { type: 'nfm_reply', nfm_reply: [Object] }
 //   }
 // ]
+const processedWebhooks = new Set<string>();
 async function handleWebhook(
   statusCode: number,
   headers: IncomingHttpHeaders,
@@ -61,15 +71,35 @@ async function handleWebhook(
     console.log('No body in webhook');
     return;
   }
+
   const bd = JSON.parse(JSON.stringify(body));
+
   if (bd.entry[0].changes[0].value.messages === undefined) {
     console.log('No messages in webhook');
     return;
   }
-
   const messageType = bd.entry[0].changes[0].value.messages[0].type;
   const from = bd.entry[0].changes[0].value.messages[0].from;
   console.log(`Received message from ${from} of type ${messageType}`);
+  console.log(bd.entry[0].changes[0].value.messages[0].id);
+  const webhookId = bd.entry[0].changes[0].value.messages[0].id;
+
+  // Vérifier si le webhook a déjà été traité
+  if (processedWebhooks.has(webhookId)) {
+    console.log(`Webhook ${webhookId} déjà traité.`);
+    return;
+  }
+
+  // Marquer le webhook comme traité
+  processedWebhooks.add(webhookId);
+
+  // Traiter le webhook
+  try {
+    // Votre logique de traitement ici
+    console.log(`Traitement du webhook ${webhookId}`);
+  } catch (error) {
+    console.error(`Erreur lors du traitement du webhook ${webhookId}:`, error);
+  }
   switch (messageType) {
     case 'interactive':
       const interactiveType =
@@ -80,27 +110,36 @@ async function handleWebhook(
           bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
             'nfm_reply'
           ],
+          from,
         );
       } else if (interactiveType === 'button_reply') {
         handleButtonReply(
           bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
             'button_reply'
           ],
+          from,
         );
       } else if (interactiveType === 'list_reply') {
         handleListReply(
           bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
             'list_reply'
           ],
+          from,
         );
       }
       break;
     case 'order':
-      handleOrder(bd.entry[0].changes[0]['value']['messages'][0]['order']);
+      handleOrder(
+        bd.entry[0].changes[0]['value']['messages'][0]['order'],
+        from,
+      );
       break;
     case 'text':
       console.log('Handling message');
-      handleMessage(bd.entry[0].changes[0]['value']['messages'][0]['text']);
+      handleMessage(
+        bd.entry[0].changes[0]['value']['messages'][0]['text'],
+        from,
+      );
       // Add your logic to handle messages here
       break;
     case 'location':
@@ -113,6 +152,11 @@ async function handleWebhook(
     default:
       console.log(`Unhandled message type: ${messageType}`);
   }
+  return {
+    statusCode: statusCode,
+    headers: headers,
+    body: JSON.stringify({ message: 'Webhook processed successfully' }),
+  };
 }
 async function handleLocation(body: any) {
   console.log('Handling location message');
@@ -121,15 +165,29 @@ async function handleLocation(body: any) {
   //   longitude: 13.0,
   // }
   console.log(body);
+  const data = await utils.getDistance(
+    body.latitude,
+    body.longitude,
+    2.4043,
+    -1.577843,
+  );
+  console.log(data);
   // Add your logic to handle location messages here
 }
-async function handleMessage(body: any) {
+async function handleMessage(body: any, from: any) {
   console.log('Handling message');
   // { text: 'Test' }
   console.log(body);
+  const inter = interaction.text_reply.find((element) =>
+    element.trigger.includes(body.text),
+  );
+  console.log(inter);
+  if (inter != undefined) {
+    inter.handle(body, from);
+  }
   // Add your logic to handle text messages here
 }
-function handleOrder(body: any) {
+async function handleOrder(body: any, from: any) {
   console.log('Handling order message');
   // {
   //   catalog_id: '1772883193117356',
@@ -143,18 +201,68 @@ function handleOrder(body: any) {
   //     }
   //   ]
   // }
+  let total = 0;
+  body.product_items.forEach((item) => {
+    total += item.item_price * item.quantity;
+  });
   console.log(body);
+  await utils.requestLocation(
+    'Cliquez sur le bouton ci-dessous pour partager votre localisation ',
+    from,
+  );
+  await sleep(1000);
+  await utils.sendPayWithOrange(from, total.toString());
+  await sleep(1000);
+  await utils.sendFlow(
+    '1158395898550311',
+    '22660356506',
+    'Test',
+    'test',
+    'test',
+    'FTX_PAYMENT',
+  );
+  interaction.nfm_reply.push({
+    id: 'FTX_PAYMENT',
+    handle: async function (data: any, from: any) {
+      console.log(data);
+      const rs = await utils.checkPayment(data.numero, data.amount);
+      console.log(rs.success);
+      if (rs.success == true) {
+        utils.sendText(from, 'Paiment reussie');
+      } else {
+        utils.sendText(
+          from,
+          'Echec de la verification du paiment , taper ( /vr ) pour reesayer',
+        );
+        interaction.text_reply.push({
+          trigger: ['/vr'],
+          handle: async function () {
+            await utils.sendFlow(
+              '1158395898550311',
+              '22660356506',
+              'Test',
+              'test',
+              'test',
+              'FTX_PAYMENT',
+            );
+          },
+        });
+      }
+    },
+  });
   // Add your logic to handle interactive messages here
 }
 
-function handleButtonReply(body: any) {
+function handleButtonReply(body: any, from: any) {
   console.log('Handling button reply');
   // { id: '5496388', title: 'Cancel' }
-  interaction.button_reply.find((element) => element.id === body.id).handle();
+  interaction.button_reply
+    .find((element) => element.id === body.id)
+    .handle(from);
 
   // Add your logic to handle button replies here
 }
-function handleFlowReply(body: any) {
+function handleFlowReply(body: any, from: any) {
   console.log('Handling button reply');
   // {
   //   response_json: '{"flow_token":"test","numero":"54963888","reseau":"0_ORANGE_Money"}',
@@ -165,15 +273,15 @@ function handleFlowReply(body: any) {
   const response_json = JSON.parse(body.response_json);
   interaction.nfm_reply
     .find((element) => element.id === response_json.flow_token)
-    .handle(body.response_json);
+    .handle(body.response_json, from);
 
   // Add your logic to handle button replies here
 }
 
-function handleListReply(body: any) {
+function handleListReply(body: any, from: any) {
   console.log('Handling list reply');
   // { id: '1', title: 'Test', description: 'Test' }
-  interaction.list_reply.find((element) => element.id === body.id).handle();
+  interaction.list_reply.find((element) => element.id === body.id).handle(from);
   console.log(body);
 
   // Add your logic to handle list replies here
