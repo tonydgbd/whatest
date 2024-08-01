@@ -5,7 +5,6 @@ import * as FormData from 'form-data';
 import * as stream from 'stream';
 import { promisify } from 'util';
 import { google } from 'googleapis';
-import { GoogleAuth } from 'google-auth-library';
 const WA_BASE_URL = process.env.WA_BASE_URL || 'graph.facebook.com';
 const M4D_APP_ID = process.env.M4D_APP_ID || '2398012080587850';
 const M4D_APP_SECRET =
@@ -60,14 +59,8 @@ async function uploadImage(imageUrl: string) {
     data: data,
   };
 
-  axios
-    .request(config)
-    .then((response) => {
-      console.log(JSON.stringify(response.data));
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+  const imagedata = await axios.request(config);
+  return imagedata.data;
 }
 
 function requestLocation(messageText: string, destinataire: string) {
@@ -106,6 +99,18 @@ function sendLocation(
       longitude: longitude,
       name: name,
       address: address,
+    },
+  });
+  request(data);
+}
+function sendImagebyId(destinataire: string, id: string) {
+  const data = JSON.stringify({
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: destinataire,
+    type: 'image',
+    image: {
+      id: id,
     },
   });
   request(data);
@@ -202,7 +207,7 @@ function sendInteractiveProductMessage(
   request(data);
 }
 
-function sendText(destinataire: string, messageText: string) {
+async function sendText(destinataire: string, messageText: string) {
   const data = JSON.stringify({
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -213,7 +218,7 @@ function sendText(destinataire: string, messageText: string) {
       body: messageText,
     },
   });
-  request(data);
+  await request(data);
 }
 function replyText(
   destinataire: string,
@@ -404,6 +409,7 @@ interface ImageHeader {
   image: {
     id?: number;
     url?: string;
+    link?: string;
   };
 }
 interface TextHeader {
@@ -626,34 +632,34 @@ async function getDistance(
 ) {
   ///maps/api/distancematrix/json?origins=51.4822656,-0.1933769&destinations=51.4994794,-0.1269979&key=<your_access_token>
   const API_URL = `https://api.distancematrix.ai/maps/api/distancematrix/json?origins=${lat1},${lon1}&destinations=${lat2},${lon2}&key=SZhwDWCqB39zOBPLByftdXibpS6DEFKfdLa9YcDMQVbzqAl6PKJmOVgKuDUbQx6b`;
-//   {
-//     "destination_addresses": [
-//         "Westminster Abbey, London SW1P 3PA, UK"
-//     ],
-//     "origin_addresses": [
-//         "Chapel, London SW6 1BA, UK"
-//     ],
-//     "rows": [
-//         {
-//             "elements": [
-//                 {
-//                     "distance": {
-//                         "text": "7.6 km",
-//                         "value": 7567
-//                     },
-//                     "duration": {
-//                         "text": "22 mins",
-//                         "value": 1359
-//                     },
-//                     "origin": "51.4822656,-0.1933769",
-//                     "destination": "51.4994794,-0.1269979",
-//                     "status": "OK"
-//                 }
-//             ]
-//         }
-//     ],
-//     "status": "OK"
-// }
+  //   {
+  //     "destination_addresses": [
+  //         "Westminster Abbey, London SW1P 3PA, UK"
+  //     ],
+  //     "origin_addresses": [
+  //         "Chapel, London SW6 1BA, UK"
+  //     ],
+  //     "rows": [
+  //         {
+  //             "elements": [
+  //                 {
+  //                     "distance": {
+  //                         "text": "7.6 km",
+  //                         "value": 7567
+  //                     },
+  //                     "duration": {
+  //                         "text": "22 mins",
+  //                         "value": 1359
+  //                     },
+  //                     "origin": "51.4822656,-0.1933769",
+  //                     "destination": "51.4994794,-0.1269979",
+  //                     "status": "OK"
+  //                 }
+  //             ]
+  //         }
+  //     ],
+  //     "status": "OK"
+  // }
 
   const config = {
     method: 'get',
@@ -680,21 +686,22 @@ async function checkPayment(numero: string, montant: string) {
   const data = JSON.stringify({
     api_key: '2pKOZHdl8SC-_6g4WO94nhmZD2vWfIth',
     app_id: '91e984af-9993-4aad-9005-f69156333e42',
-    amount: Number(montant),
-    phonenumber: '54963888',
+    amount: montant,
+    phonenumber: numero,
     orange: true,
   });
 
   const config = {
     method: 'post',
     maxBodyLength: Infinity,
-    url: 'https://ftx-pay.futurix.xyz/pay/control/phone_number/',
+    url: 'https://shark-app-xeyhn.ondigitalocean.app/pay/control/phone_number',
     headers: {
       'Content-Type': 'application/json',
     },
     data: data,
   };
   try {
+    console.log(data);
     const rs = await axios.request(config);
     return rs.data;
   } catch (error) {
@@ -1010,4 +1017,5 @@ export default {
   uploadImagefromstorage,
   uploadImage,
   getDistance,
+  sendImagebyId,
 };

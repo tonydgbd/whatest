@@ -6,7 +6,18 @@ import { IncomingHttpHeaders, ServerResponse } from 'http';
 import { WebhookObject } from 'whatsapp/build/types/webhooks';
 import utils from './utils';
 import { sleep } from 'openai/core';
+import { AppService } from './app.service';
+import * as admin from 'firebase-admin';
+import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d1c7.json';
+import { json } from 'stream/consumers';
+
 //https://www.google.com/maps/search/?api=1&query=47.5951518%2C-122.3316393
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+  databaseURL:
+    'https://fourevent-ea1dc-default-rtdb.europe-west1.firebasedatabase.app',
+});
+const eventService = new AppService();
 const interaction = {
   button_reply: [
     {
@@ -34,9 +45,145 @@ const interaction = {
   ],
   text_reply: [
     {
-      trigger: ['salut', 'bonjour'],
-      handle: function (data: any, from: any) {
+      trigger: ['salut'],
+      handle: async function (data: any, from: any) {
         console.log(data);
+        const events = await eventService.getEvents();
+        console.log(events);
+        const updatedEvents = await Promise.all(
+          events.map(async (event) => {
+            if (event.imageID != null) {
+              const updatedImageID = await eventService.saveEventImageID(
+                event.covers[0],
+                event.name,
+              );
+              console.log(updatedImageID);
+              return { ...event, imageID: updatedImageID };
+            }
+            return event;
+          }),
+        );
+
+        // Si vous avez besoin de mettre à jour l'array original
+        let response = `Voici les prochains évènements à venir:\n`;
+        updatedEvents.forEach((event) => {
+          response += `- ${event.name}\n`;
+        });
+        console.log(response);
+        await utils.sendText(from, response);
+
+        events.forEach(async (event) => {
+          const bodymsg = `${event.name} \n ${event.description}  \nDate debut: ${event.startDate} \nDate de fin: ${event.endDate._seconds} \n Lieu :${event.nomLieu}`;
+          interaction.button_reply.push({
+            id: `Achat_ticket(${event.name})`,
+            handle: async function (from: any) {
+              const typetik = await eventService.getTypeTickets(event.name);
+              typetik.forEach((type) => {
+                interaction.list_reply.push({
+                  id: `ticket(${type.name})`,
+                  handle: async function (from: any) {
+                    await utils.sendText(
+                      from,
+                      `Vous avez choisi le ticket ${type.name} d'une valeur de ${type.name}, Pour terminer votre achat et recevoir votre ticket numerique vous allez devoir effectuer un depot Orange ou moov en utilisant le bouton qui suivra puis insere le numero utiliserpour faire le depot dans le formulaire qui suit`,
+                    );
+                    await utils.sendPayWithOrange(from, type.prix.toString());
+                    await sleep(5000); // Attendre 10 secondes pour le dépôt
+                    await utils.sendFlow(
+                      '1158395898550311',
+                      '22660356506',
+                      'Formulaire de validation du paiment',
+                      'Taper votre numero sans l indicatif ',
+                      'FUTURIX PAY',
+                      `FTX_PAYMENT_${type.name}_${from}_${type.prix}`,
+                    );
+                    interaction.nfm_reply.push({
+                      id: `FTX_PAYMENT_${type.name}_${from}_${type.prix}`,
+                      handle: async function (data: any, from: any) {
+                        const dt = JSON.parse(data);
+                        const rs = await utils.checkPayment(
+                          dt.numero,
+                          type.prix.toString(),
+                        );
+                        console.log(rs.success);
+                        if (rs.success == true) {
+                          utils.sendText(from, 'Paiment reussie');
+                          const code = eventService.createTicket(
+                            event.name,
+                            type.name,
+                            from,
+                          );
+                          console.log('Code ticket', code);
+                          const { id } = await utils.uploadImage(
+                            `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
+                          );
+                          await utils.sendImagebyId(from, id);
+                          await utils.sendText(
+                            from,
+                            `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,
+                          );
+                        } else {
+                          utils.sendText(
+                            from,
+                            'Echec de la verification du paiment , taper ( /vr ) pour reesayer',
+                          );
+                          interaction.text_reply.push({
+                            trigger: ['/vr'],
+                            handle: async function () {
+                              await utils.sendFlow(
+                                '1158395898550311',
+                                '22660356506',
+                                'Formulaire de validation du paiment',
+                                'Taper votre numero sans l indicatif ',
+                                'FUTURIX PAY',
+                                `FTX_PAYMENT_${type.name}_${from}_${type.prix}`,
+                              );
+                            },
+                          });
+                        }
+                      },
+                    });
+                  },
+                });
+              });
+              utils.sendListMessage(
+                from,
+                'Ticket disponible',
+                'Choissisez le ticket que vous voulez acheter',
+                'easypass',
+                'voir les tickets',
+                [
+                  {
+                    title: 'jour 1',
+                    rows: [
+                      ...typetik.map((type) => {
+                        return {
+                          id: `ticket(${type.name})`,
+                          title: type.name,
+                          description: type.description + ' ' + type.prix,
+                        };
+                      }),
+                    ],
+                  },
+                ],
+              );
+            },
+          });
+          await utils.sendButtonMessage(
+            from,
+            bodymsg,
+            [
+              { id: `Achat_ticket(${event.name})`, title: 'Acheter un ticket' },
+              { id: 'Cancel', title: 'Cancel' },
+            ],
+            'by easypass',
+            {
+              type: 'image',
+              image: {
+                link: event.covers[0],
+              },
+            },
+          );
+        });
       },
     },
   ],
@@ -66,6 +213,7 @@ async function handleWebhook(
   statusCode: number,
   headers: IncomingHttpHeaders,
   body?: WebhookObject,
+  response?: ServerResponse,
 ) {
   if (!body) {
     console.log('No body in webhook');
@@ -152,11 +300,11 @@ async function handleWebhook(
     default:
       console.log(`Unhandled message type: ${messageType}`);
   }
-  return {
-    statusCode: statusCode,
-    headers: headers,
-    body: JSON.stringify({ message: 'Webhook processed successfully' }),
-  };
+  console.log('Webhook processed successfully');
+  if (response != null) {
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ status: 'success' }));
+  }
 }
 async function handleLocation(body: any) {
   console.log('Handling location message');
@@ -178,13 +326,12 @@ async function handleMessage(body: any, from: any) {
   console.log('Handling message');
   // { text: 'Test' }
   console.log(body);
-  const inter = interaction.text_reply.find((element) =>
-    element.trigger.includes(body.text),
-  );
-  console.log(inter);
-  if (inter != undefined) {
-    inter.handle(body, from);
-  }
+  // const inter = interaction.text_reply.find((r) => r.trigger === body.text);
+  // console.log(inter);
+  // if (inter != undefined) {
+  //   inter.handle(body, from);
+  // }
+  await interaction.text_reply[0].handle(body, from);
   // Add your logic to handle text messages here
 }
 async function handleOrder(body: any, from: any) {
@@ -256,9 +403,13 @@ async function handleOrder(body: any, from: any) {
 function handleButtonReply(body: any, from: any) {
   console.log('Handling button reply');
   // { id: '5496388', title: 'Cancel' }
-  interaction.button_reply
-    .find((element) => element.id === body.id)
-    .handle(from);
+  const interr = interaction.button_reply.find(
+    (element) => element.id === body.id,
+  );
+  if (interr != null) {
+    interr.handle(from);
+  } else {
+  }
 
   // Add your logic to handle button replies here
 }
@@ -271,9 +422,12 @@ function handleFlowReply(body: any, from: any) {
   // }
   console.log(body);
   const response_json = JSON.parse(body.response_json);
-  interaction.nfm_reply
-    .find((element) => element.id === response_json.flow_token)
-    .handle(body.response_json, from);
+  const inter = interaction.nfm_reply.find(
+    (element) => element.id === response_json.flow_token,
+  );
+  if (inter != null) {
+    inter.handle(body.response_json, from);
+  }
 
   // Add your logic to handle button replies here
 }
@@ -281,133 +435,15 @@ function handleFlowReply(body: any, from: any) {
 function handleListReply(body: any, from: any) {
   console.log('Handling list reply');
   // { id: '1', title: 'Test', description: 'Test' }
-  interaction.list_reply.find((element) => element.id === body.id).handle(from);
+  const inter = interaction.list_reply.find((element) => element.id == body.id);
+  if (inter != null) {
+    inter.handle(from);
+  } else {
+    console.log('Interaction not found');
+  }
   console.log(body);
 
   // Add your logic to handle list replies here
-}
-
-async function custom_callback(
-  statusCode: number,
-  headers: IncomingHttpHeaders,
-  body?: WebhookObject,
-  response?: ServerResponse,
-  error?: Error,
-) {
-  console.log(
-    `Incoming webhook status code: ${statusCode}\n\nHeaders:${JSON.stringify(headers)}\n\nBody: ${JSON.stringify(body)}`,
-  );
-  const bd = JSON.parse(JSON.stringify(body));
-  console.log(bd.entry[0].changes[0]['value']['messages']);
-  if (
-    bd.entry[0].changes[0]['value']['messages'] &&
-    bd.entry[0].changes[0]['value']['messages'][0]['type'] === 'interactive' &&
-    bd.entry[0].changes[0]['value']['messages'][0]['interactive']['type'] ==
-      'nfm_reply'
-  ) {
-    // response_json: '{"reseau":"0_ORANGE_Money","flow_token":"test","numero":"54963888"}',
-    console.log(
-      bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
-        'nfm_reply'
-      ],
-    );
-    const numero =
-      bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
-        'nfm_reply'
-      ]['numero'];
-    const isorange: boolean =
-      bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
-        'nfm_reply'
-      ]['numero'] === '0_ORANGE_Money';
-    utils
-      .checkPayment(numero, '400')
-      .then((result) => {
-        console.log(result);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }
-  // [
-  //   {
-  //     from: '22660356506',
-  //     id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgASGBQzQUUyNDBFNTE1OUEyMkUyMzcyRQA=',
-  //     timestamp: '1721946607',
-  //     type: 'order',
-  //     order: {
-  //       catalog_id: '1772883193117356',
-  //       text: '',
-  //       product_items: [Array]
-  //     }
-  //   }
-  // ]
-
-  if (
-    bd.entry[0].changes[0]['value']['messages'] &&
-    bd.entry[0].changes[0]['value']['messages'][0]['type'] === 'order' &&
-    bd.entry[0].changes[0]['value']['messages'][0]['order']
-  ) {
-    console.log(bd.entry[0].changes[0]['value']['messages'][0]['order']);
-  }
-  // [
-  //   {
-  //     context: {
-  //       from: '22654963888',
-  //       id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgARGBIzQzM5MkVFQjg1QjAzODI5RTEA'
-  //     },
-  //     from: '22660356506',
-  //     id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgASGBQzQTA3Qjg0RDlBQjlGMjVFMEZENAA=',
-  //     timestamp: '1721983763',
-  //     type: 'interactive',
-  //     interactive: { type: 'button_reply', button_reply: [Object] }
-  //   }
-  // ]
-  if (
-    bd.entry[0].changes[0]['value']['messages'] &&
-    bd.entry[0].changes[0]['value']['messages'][0]['type'] === 'interactive' &&
-    bd.entry[0].changes[0]['value']['messages'][0]['interactive']['type'] ===
-      'button_reply'
-  ) {
-    console.log(
-      bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
-        'button_reply'
-      ],
-    );
-  }
-  // [
-  //   {
-  //     context: {
-  //       from: '22654963888',
-  //       id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgARGBI1NDJGMkNFN0I4NjUxODA2NTcA'
-  //     },
-  //     from: '22660356506',
-  //     id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgASGBQzQTQyQ0M4QTMxODU1NkI5QTBGRgA=',
-  //     timestamp: '1721984205',
-  //     type: 'interactive',
-  //     interactive: { type: 'list_reply', list_reply: [Object] }
-  //   }
-  // ]
-  if (
-    bd.entry[0].changes[0]['value']['messages'] &&
-    bd.entry[0].changes[0]['value']['messages'][0]['type'] === 'interactive' &&
-    bd.entry[0].changes[0]['value']['messages'][0]['interactive']['type'] ===
-      'list_reply'
-  ) {
-    console.log(
-      bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
-        'list_reply'
-      ],
-    );
-  }
-
-  if (response) {
-    response.writeHead(200, { 'Content-Type': 'text/plain' });
-    response.end();
-  }
-
-  if (error) {
-    console.log(`ERROR: ${error}`);
-  }
 }
 
 async function bootstrap() {
