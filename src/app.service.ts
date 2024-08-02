@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import utils from './utils';
 import * as admin from 'firebase-admin';
+import { randomInt } from 'crypto';
 
 // [
 //   {
@@ -46,7 +47,10 @@ import * as admin from 'firebase-admin';
 // ]
 type typeTicket = {
   showqty: boolean;
-  hiddenuntil: any;
+  hiddenuntil: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
   prix: number;
   name: string;
   description: string;
@@ -58,9 +62,18 @@ type typeTicket = {
   isfree: boolean;
   price_per_status: number[];
   free_for_status: number;
-  dateDebutValidite: any;
-  dateFinValidite: any;
-  hiddenAfter: any;
+  dateDebutValidite: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  dateFinValidite: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  hiddenAfter: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
   quantity: number;
   vente: number;
 };
@@ -151,20 +164,19 @@ export class AppService {
       .collection('typeTicket')
       .where('name', '==', ticketname)
       .get();
-    const type = types.docs[0];
-    ticket.typeTicket = type.data();
-    ticket.code = `${ev.id}${Math.random() * 999999}@Whatsapp@${phonenumber}`;
-
+    const typ = types.docs[0];
+    ticket.typeTicket = typ.data();
+    ticket.code = `${ev.id}${randomInt(99999999)}@Whatsapp@${phonenumber}`;
     try {
-      type.ref!.update({
+      await typ.ref.update({
         vente: admin.firestore.FieldValue.increment(1),
         quantity: admin.firestore.FieldValue.increment(-1),
-        participants: admin.firestore.FieldValue.arrayUnion([phonenumber]),
+        participants: admin.firestore.FieldValue.arrayUnion(phonenumber),
       });
       const userDoc = await admin
         .firestore()
         .collection('users')
-        .where('phoneNumber', '==', phonenumber)
+        .where('phoneNumber', '==', '+' + phonenumber)
         .get();
       if (userDoc.docs.length > 0) {
         await userDoc.docs[0].ref
@@ -178,10 +190,11 @@ export class AppService {
           .child(ticket.code)
           .set({ active: true });
         return ticket.code;
+      } else {
+        return ticket.code;
       }
     } catch (e) {
       console.error(e);
     }
-    return ticket;
   }
 }

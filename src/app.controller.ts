@@ -101,7 +101,13 @@ export class AppController {
   }
   @Post('/1')
   async reqestLocation(@Body() body: any) {
-    console.log(body);
+    const a = await this.appService.createTicket(
+      'Soirée récréative',
+      'Free pass',
+      '22660356506',
+    );
+    console.log(a);
+    return a;
   }
   @Post('/2')
   async interactive() {

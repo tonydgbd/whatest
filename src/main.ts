@@ -9,7 +9,6 @@ import { sleep } from 'openai/core';
 import { AppService } from './app.service';
 import * as admin from 'firebase-admin';
 import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d1c7.json';
-import { json } from 'stream/consumers';
 
 //https://www.google.com/maps/search/?api=1&query=47.5951518%2C-122.3316393
 admin.initializeApp({
@@ -18,6 +17,7 @@ admin.initializeApp({
     'https://fourevent-ea1dc-default-rtdb.europe-west1.firebasedatabase.app',
 });
 const eventService = new AppService();
+
 const interaction = {
   button_reply: [
     {
@@ -46,7 +46,7 @@ const interaction = {
   text_reply: [
     {
       trigger: ['salut'],
-      handle: async function (data: any, from: any) {
+      handle: async function (data: any, from: any, from_name: string) {
         console.log(data);
         const events = await eventService.getEvents();
         console.log(events);
@@ -63,6 +63,11 @@ const interaction = {
             return event;
           }),
         );
+        await utils.sendText(
+          from,
+          `Bonjour ${from_name} Bienvue sur le service Billeterie de easyPass Burkina `,
+        );
+        await sleep(1000);
 
         // Si vous avez besoin de mettre à jour l'array original
         let response = `Voici les prochains évènements à venir:\n`;
@@ -73,78 +78,104 @@ const interaction = {
         await utils.sendText(from, response);
 
         events.forEach(async (event) => {
-          const bodymsg = `${event.name} \n ${event.description}  \nDate debut: ${event.startDate} \nDate de fin: ${event.endDate._seconds} \n Lieu :${event.nomLieu}`;
+          const bodymsg = `${event.name} \n ${event.description}  \nDate debut: ${new Date(event.startDate_seconds * 1000).toLocaleDateString()} \nDate de fin: ${new Date(event.endDate._seconds * 1000).toLocaleDateString()} \n Lieu :${event.nomLieu}`;
           interaction.button_reply.push({
-            id: `Achat_ticket(${event.name})`,
+            id: `Achat_ticket(${event.name})_${from}`,
             handle: async function (from: any) {
               const typetik = await eventService.getTypeTickets(event.name);
-              typetik.forEach((type) => {
-                interaction.list_reply.push({
-                  id: `ticket(${type.name})`,
-                  handle: async function (from: any) {
-                    await utils.sendText(
-                      from,
-                      `Vous avez choisi le ticket ${type.name} d'une valeur de ${type.name}, Pour terminer votre achat et recevoir votre ticket numerique vous allez devoir effectuer un depot Orange ou moov en utilisant le bouton qui suivra puis insere le numero utiliserpour faire le depot dans le formulaire qui suit`,
-                    );
-                    await utils.sendPayWithOrange(from, type.prix.toString());
-                    await sleep(5000); // Attendre 10 secondes pour le dépôt
-                    await utils.sendFlow(
-                      '1158395898550311',
-                      '22660356506',
-                      'Formulaire de validation du paiment',
-                      'Taper votre numero sans l indicatif ',
-                      'FUTURIX PAY',
-                      `FTX_PAYMENT_${type.name}_${from}_${type.prix}`,
-                    );
-                    interaction.nfm_reply.push({
-                      id: `FTX_PAYMENT_${type.name}_${from}_${type.prix}`,
-                      handle: async function (data: any, from: any) {
-                        const dt = JSON.parse(data);
-                        const rs = await utils.checkPayment(
-                          dt.numero,
+              typetik
+                .filter(
+                  (val) =>
+                    val.hiddenAfter._seconds * 1000 &&
+                    Date.now() >= val.hiddenuntil._seconds * 1000,
+                )
+                .forEach((type) => {
+                  interaction.list_reply.push({
+                    id: `ticket(${type.name})_${from}`,
+                    handle: async function (from: any) {
+                      if (type.isfree) {
+                        const code = await eventService.createTicket(
+                          event.name,
+                          type.name,
+                          from,
+                        );
+                        console.log('Code ticket', code);
+                        const { id } = await utils.uploadImage(
+                          `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
+                        );
+                        await utils.sendImagebyId(from, id);
+                        await utils.sendText(
+                          from,
+                          `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,
+                        );
+                      } else {
+                        await utils.sendText(
+                          from,
+                          `Vous avez choisi le ticket ${type.name} d'une valeur de ${type.name}, Pour terminer votre achat et recevoir votre ticket numerique vous allez devoir effectuer un depot Orange ou moov en utilisant le bouton qui suivra puis insere le numero utiliserpour faire le depot dans le formulaire qui suit`,
+                        );
+                        await utils.sendPayWithOrange(
+                          from,
                           type.prix.toString(),
                         );
-                        console.log(rs.success);
-                        if (rs.success == true) {
-                          utils.sendText(from, 'Paiment reussie');
-                          const code = eventService.createTicket(
-                            event.name,
-                            type.name,
-                            from,
-                          );
-                          console.log('Code ticket', code);
-                          const { id } = await utils.uploadImage(
-                            `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
-                          );
-                          await utils.sendImagebyId(from, id);
-                          await utils.sendText(
-                            from,
-                            `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,
-                          );
-                        } else {
-                          utils.sendText(
-                            from,
-                            'Echec de la verification du paiment , taper ( /vr ) pour reesayer',
-                          );
-                          interaction.text_reply.push({
-                            trigger: ['/vr'],
-                            handle: async function () {
-                              await utils.sendFlow(
-                                '1158395898550311',
-                                '22660356506',
-                                'Formulaire de validation du paiment',
-                                'Taper votre numero sans l indicatif ',
-                                'FUTURIX PAY',
-                                `FTX_PAYMENT_${type.name}_${from}_${type.prix}`,
+                        await sleep(5000); // Attendre 10 secondes pour le dépôt
+                        await utils.sendFlow(
+                          '1158395898550311',
+                          from,
+                          'Formulaire de validation du paiment',
+                          'Taper votre numero sans l indicatif ',
+                          'FUTURIX PAY',
+                          `FTX_PAYMENT_${type.name}_${from}_${type.prix}_${from}`,
+                        );
+                        interaction.nfm_reply.push({
+                          id: `FTX_PAYMENT_${type.name}_${from}_${type.prix}_${from}`,
+                          handle: async function (data: any, from: any) {
+                            const dt = JSON.parse(data);
+                            const rs = await utils.checkPayment(
+                              dt.numero,
+                              type.prix.toString(),
+                            );
+                            console.log(rs.success);
+                            if (rs.success == true) {
+                              utils.sendText(from, 'Paiment reussie');
+                              const code = await eventService.createTicket(
+                                event.name,
+                                type.name,
+                                from,
                               );
-                            },
-                          });
-                        }
-                      },
-                    });
-                  },
+                              console.log('Code ticket', code);
+                              const { id } = await utils.uploadImage(
+                                `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
+                              );
+                              await utils.sendImagebyId(from, id);
+                              await utils.sendText(
+                                from,
+                                `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,
+                              );
+                            } else {
+                              utils.sendText(
+                                from,
+                                'Echec de la verification du paiment , taper ( /vr ) pour reesayer',
+                              );
+                              interaction.text_reply.push({
+                                trigger: ['/vr'],
+                                handle: async function () {
+                                  await utils.sendFlow(
+                                    '1158395898550311',
+                                    from,
+                                    'Formulaire de validation du paiment',
+                                    'Taper votre numero sans l indicatif ',
+                                    'FUTURIX PAY',
+                                    `FTX_PAYMENT_${type.name}_${from}_${type.prix}`,
+                                  );
+                                },
+                              });
+                            }
+                          },
+                        });
+                      }
+                    },
+                  });
                 });
-              });
               utils.sendListMessage(
                 from,
                 'Ticket disponible',
@@ -157,9 +188,11 @@ const interaction = {
                     rows: [
                       ...typetik.map((type) => {
                         return {
-                          id: `ticket(${type.name})`,
+                          id: `ticket(${type.name})_${from}`,
                           title: type.name,
-                          description: type.description + ' ' + type.prix,
+                          description: type.isfree
+                            ? 'Ticket gratuit'
+                            : type.description + ' ' + type.prix,
                         };
                       }),
                     ],
@@ -172,10 +205,12 @@ const interaction = {
             from,
             bodymsg,
             [
-              { id: `Achat_ticket(${event.name})`, title: 'Acheter un ticket' },
-              { id: 'Cancel', title: 'Cancel' },
+              {
+                id: `Achat_ticket(${event.name})_${from}`,
+                title: 'Acheter un ticket',
+              },
             ],
-            'by easypass',
+            'EasyPass Burkina',
             {
               type: 'image',
               image: {
@@ -188,6 +223,7 @@ const interaction = {
     },
   ],
 };
+
 // import OpenAI from 'openai';
 config();
 
@@ -219,6 +255,7 @@ async function handleWebhook(
     console.log('No body in webhook');
     return;
   }
+  console.log(JSON.stringify(body));
 
   const bd = JSON.parse(JSON.stringify(body));
 
@@ -228,6 +265,7 @@ async function handleWebhook(
   }
   const messageType = bd.entry[0].changes[0].value.messages[0].type;
   const from = bd.entry[0].changes[0].value.messages[0].from;
+  const from_name = bd.entry[0].changes[0].value.contacts[0].profile.name;
   console.log(`Received message from ${from} of type ${messageType}`);
   console.log(bd.entry[0].changes[0].value.messages[0].id);
   const webhookId = bd.entry[0].changes[0].value.messages[0].id;
@@ -245,6 +283,7 @@ async function handleWebhook(
   try {
     // Votre logique de traitement ici
     console.log(`Traitement du webhook ${webhookId}`);
+    console.log(`Traitement du webhook ${bd}`);
   } catch (error) {
     console.error(`Erreur lors du traitement du webhook ${webhookId}:`, error);
   }
@@ -287,6 +326,7 @@ async function handleWebhook(
       handleMessage(
         bd.entry[0].changes[0]['value']['messages'][0]['text'],
         from,
+        from_name,
       );
       // Add your logic to handle messages here
       break;
@@ -322,7 +362,7 @@ async function handleLocation(body: any) {
   console.log(data);
   // Add your logic to handle location messages here
 }
-async function handleMessage(body: any, from: any) {
+async function handleMessage(body: any, from: any, from_name: any) {
   console.log('Handling message');
   // { text: 'Test' }
   console.log(body);
@@ -331,7 +371,7 @@ async function handleMessage(body: any, from: any) {
   // if (inter != undefined) {
   //   inter.handle(body, from);
   // }
-  await interaction.text_reply[0].handle(body, from);
+  await interaction.text_reply[0].handle(body, from, from_name);
   // Add your logic to handle text messages here
 }
 async function handleOrder(body: any, from: any) {
