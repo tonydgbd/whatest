@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import utils from './utils';
 import * as admin from 'firebase-admin';
-import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d1c7.json';
 
 // [
 //   {
@@ -44,15 +44,30 @@ import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d
 //       "name": "Gros Concert 🏆 Francky Fp •⁠ ⁠LA RENCONTRE DES AS •⁠"
 //   }
 // ]
+type typeTicket = {
+  showqty: boolean;
+  hiddenuntil: any;
+  prix: number;
+  name: string;
+  description: string;
+  isLiveOnly: boolean;
+  participants: string[];
+  isLive: boolean;
+  hasLive: boolean;
+  liveID: string;
+  isfree: boolean;
+  price_per_status: number[];
+  free_for_status: number;
+  dateDebutValidite: any;
+  dateFinValidite: any;
+  hiddenAfter: any;
+  quantity: number;
+  vente: number;
+};
+
 @Injectable()
 export class AppService {
-  constructor() {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-      databaseURL:
-        'https://fourevent-ea1dc-default-rtdb.europe-west1.firebasedatabase.app',
-    });
-  }
+  constructor() {}
   async getEvents(): Promise<any[]> {
     const date = new Date();
     console.log('date', date);
@@ -66,5 +81,107 @@ export class AppService {
       ev.push(doc.data());
     });
     return ev;
+  }
+  async getTypeTickets(name: string): Promise<typeTicket[]> {
+    const date = new Date();
+    console.log('date', date);
+    const ev = [];
+    const events = await admin
+      .firestore()
+      .collection('events')
+      .where('name', '==', name)
+      .get();
+    const typeticket = await events.docs[0].ref.collection('typeTicket').get();
+    typeticket.forEach((doc) => {
+      ev.push(doc.data());
+    });
+    return ev;
+  }
+  async saveEventImageID(
+    eventImageUrl: string,
+    eventname: string,
+  ): Promise<any> {
+    console.log('saveEventImageID', eventImageUrl, eventname);
+    const { id } = await utils.uploadImage(eventImageUrl);
+    console.log('id', id);
+    const eventRef = await admin
+      .firestore()
+      .collection('events')
+      .where('name', '==', eventname)
+      .get();
+    console.log('eventRef', eventRef.docs.length);
+    if ((await eventRef).docs.length > 0) {
+      const event = (await eventRef).docs[0].data();
+      event.covers = [...event.covers, id];
+      await eventRef.docs[0].ref.update({
+        imageID: id,
+      });
+      return id;
+    } else {
+      throw new Error(`No event found with name: ${eventname}`);
+    }
+  }
+  getQrcodeLink(id: string) {
+    return `https://quickchart.io/qr?text=${id}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`;
+  }
+
+  async createTicket(
+    eventname: string,
+    ticketname: string,
+    phonenumber: string,
+  ) {
+    //creation of ticket
+    const ticket = {
+      code: '',
+      isActive: true,
+      isValid: true,
+      typeTicket: {},
+      cover: '',
+      event: {},
+    };
+    const event = await admin
+      .firestore()
+      .collection('events')
+      .where('name', '==', eventname)
+      .get();
+    const ev = event.docs[0];
+    ticket.event = ev.data();
+    ticket.cover = ev.data().covers[0];
+    const types = await ev.ref
+      .collection('typeTicket')
+      .where('name', '==', ticketname)
+      .get();
+    const type = types.docs[0];
+    ticket.typeTicket = type.data();
+    ticket.code = `${ev.id}${Math.random() * 999999}@Whatsapp@${phonenumber}`;
+
+    try {
+      type.ref!.update({
+        vente: admin.firestore.FieldValue.increment(1),
+        quantity: admin.firestore.FieldValue.increment(-1),
+        participants: admin.firestore.FieldValue.arrayUnion([phonenumber]),
+      });
+      const userDoc = await admin
+        .firestore()
+        .collection('users')
+        .where('phoneNumber', '==', phonenumber)
+        .get();
+      if (userDoc.docs.length > 0) {
+        await userDoc.docs[0].ref
+          .collection('tickets')
+          .doc(ticket.code)
+          .set(ticket);
+        //   MyAuthController.instance.account.refresh();
+        await admin
+          .database()
+          .ref('ticket')!
+          .child(ticket.code)
+          .set({ active: true });
+        return ticket.code;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return ticket;
   }
 }

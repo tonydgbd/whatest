@@ -1,13 +1,11 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Request } from 'express';
 import utils from './utils';
-
-
+import request from 'request';
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
-
 
   @Post('/messages')
   getMessages(req: Request) {
@@ -96,27 +94,14 @@ export class AppController {
   }
   @Post('/6')
   async uploadimage() {
-    await utils.getSheetData();
+    await utils.sendImage(
+      '22660356506',
+      'https://quickchart.io/qr?text=32456789089786&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png',
+    );
   }
   @Post('/1')
-  async reqestLocation() {
-    // await utils
-    //   .checkPayment('54963888', 400)
-    //   .then((result) => {
-    //     console.log(' Location');
-    //     console.log(result);
-    //   })
-    //   .catch((err) => {
-    //     console.error(err);
-    //   });
-    await utils.sendFlow(
-      '1158395898550311',
-      '22660356506',
-      'Test',
-      'test',
-      'test',
-      'test',
-    );
+  async reqestLocation(@Body() body: any) {
+    console.log(body);
   }
   @Post('/2')
   async interactive() {
