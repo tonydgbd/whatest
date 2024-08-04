@@ -100,10 +100,13 @@ const interaction = {
                           from,
                         );
                         console.log('Code ticket', code);
-                        const { id } = await utils.uploadImage(
+                        // const { id } = await utils.uploadImage(
+                        //   `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
+                        // );
+                        await utils.sendImage(
+                          from,
                           `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
                         );
-                        await utils.sendImagebyId(from, id);
                         await utils.sendText(
                           from,
                           `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,

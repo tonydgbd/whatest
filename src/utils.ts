@@ -115,11 +115,7 @@ function sendImagebyId(destinataire: string, id: string) {
   });
   request(data);
 }
-function sendImage(
-  destinataire: string,
-  imageUrl: string,
-  caption: string = '',
-) {
+function sendImage(destinataire: string, imageUrl: string) {
   const data = JSON.stringify({
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -127,7 +123,6 @@ function sendImage(
     type: 'image',
     image: {
       link: imageUrl,
-      caption: caption,
     },
   });
   request(data);

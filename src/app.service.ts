@@ -166,7 +166,7 @@ export class AppService {
       .get();
     const typ = types.docs[0];
     ticket.typeTicket = typ.data();
-    ticket.code = `${ev.id}${randomInt(99999999)}@Whatsapp@${phonenumber}`;
+    ticket.code = `${ev.id}${randomInt(99999999)}Whatsapp@${phonenumber}`;
     try {
       await typ.ref.update({
         vente: admin.firestore.FieldValue.increment(1),
