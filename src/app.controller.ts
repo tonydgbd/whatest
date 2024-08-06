@@ -1,11 +1,19 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Request } from 'express';
 import utils from './utils';
-import request from 'request';
+import { GoogleSheetService } from './google-sheet/google-sheet.service';
+import { DirectusServiceService } from './directus-service/directus-service.service';
+
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private googleSheetService: GoogleSheetService,
+    private directusServiceService: DirectusServiceService,
+  ) {
+    this.googleSheetService = new GoogleSheetService();
+  }
 
   @Post('/messages')
   getMessages(req: Request) {
@@ -13,83 +21,78 @@ export class AppController {
   }
   @Post('/0')
   async sendPayWithOrange() {
-    await utils.requestLocation('test demande localisation', '22660356506');
+    const rowData = {
+      title: 'Poulet Panne',
+      description: 'panne',
+      availability: 'in stock',
+      condition: 'new',
+      price: '500 XOF',
+      link: 'https://www.facebook.com/facebook_t_shirt',
+      image_link:
+        'https://platetrecette.com/wp-content/uploads/2019/11/cuisses-croustillantes-et-légères-au-four-WW.jpg',
+      brand: 'Le Meilleur GOUT',
+      google_product_category: 'Apparel & Accessories > Clothing',
+      fb_product_category: 'Clothing & Accessories > Clothing',
+      quantity_to_sell_on_facebook: '75',
+      sale_price: '10,00 USD',
+      sale_price_effective_date:
+        '2020-04-30T09:30-08:00/2020-05-30T23:59-08:00',
+      item_group_id: '445',
+      gender: 'unisex',
+      color: 'royal blue',
+      size: 'M',
+      age_group: 'adult',
+      material: 'cotton',
+      pattern: 'stripes',
+      shipping: '',
+      shipping_weight: '10 kg',
+      'video[0].url': 'http://www.facebook.com/a0.mp4',
+      'video[0].tag[0]': 'Gym',
+      'address.city': 'Palo Alto',
+      'address.country': 'United States',
+      'address.neighborhoods': 'Palo Alto',
+      'address.postal_code': '12345',
+      'address.region': 'California',
+      'address.street_address': '675 El Camino Real',
+      'availability_polygon_coordinates[0].latitude': '10.4',
+      'availability_polygon_coordinates[0].longitude': '87',
+      'availability_polygon_coordinates[1].latitude': '88.123',
+      'availability_polygon_coordinates[1].longitude': '10.123',
+      'availability_polygon_coordinates[2].latitude': '87.123',
+      'availability_polygon_coordinates[2].longitude': '11.123',
+      'availability_polygon_coordinates[3].latitude': '10.4',
+      'availability_polygon_coordinates[3].longitude': '87',
+      'availability_circle_origin.latitude': '88.223',
+      'availability_circle_origin.longitude': '10.123',
+      availability_circle_radius_unit: 'km',
+      availability_circle_radius: '4',
+      'style[0]': 'Bodycon',
+      id: 'SguoLJAXCRJMUS283VL7Qh',
+    };
   }
   @Post('/5')
   async sendbuttonimage() {
-    await utils.sendButtonMessage(
+    await this.directusServiceService.createOrder(
+      {
+        step: 5,
+        data: {
+          order: {
+            catalog_id: '1772883193117356',
+            text: '',
+            product_items: [
+              {
+                product_retailer_id: '1',
+                quantity: 1,
+                item_price: 500,
+                currency: 'XOF',
+              },
+            ],
+          },
+          location: { latitude: 12.405309677124, longitude: -1.5781556367874 },
+        },
+        total: 500,
+      },
       '22660356506',
-      'test',
-      [
-        {
-          id: '54963888',
-          title: 'Payer',
-        },
-        {
-          id: '5496388',
-          title: 'Annuler',
-        },
-      ],
-      null,
-      {
-        type: 'image',
-        image: {
-          id: 1629914114460644,
-        },
-      },
-    );
-  }
-  @Post('/7')
-  async sendaudio() {
-    // utils.sendCatalogMessage('22660356506', 'test', '1', 'test');
-    // Exemple d'utilisation de la fonction addOrUpdateRow
-    // const spreadsheetId = '18LqtF3o5V8OASnB4qsQ048Y7f51k0psM8PKSNqVu0dU';
-    // const sheetName = 'Worksheet';
-    // const columnName = 'id';
-    // const columnValue = '2';
-    // const rowData = ['123', 'John Doe', 'john.doe@example.com'];
-
-    // utils.addOrUpdateRow(
-    //   spreadsheetId,
-    //   sheetName,
-    //   columnName,
-    //   columnValue,
-    //   rowData,
-    // );
-    // Importer la fonction (assurez-vous que le chemin est correct)
-
-    // Valeurs d'exemple pour les paramètres
-    const destinataire = '22660256506';
-    const templateName = 'summer_carousel_promo_2023';
-    const languageCode = 'en_US';
-    const category = 'MARKETING';
-    const bubbleText =
-      "Summer is here, and we've got the freshest produce around! Use code {{1}} to get {{2}} off your next order.";
-    const bubbleTextVarExample = ['15OFF', '15%'];
-    const cards = [
-      {
-        headerFormat: 'IMAGE',
-        headerHandle: '4::aW...',
-        bodyText:
-          'Rare lemons for unique cocktails. Use code {{1}} to get {{2}} off all produce.',
-        bodyTextVarExample: ['15OFF', '15%'],
-        quickReplyButtonText: 'Send more like this',
-        urlButtonText: 'Buy now',
-        urlButtonUrl: 'https://www.luckyshrub.com/shop?promo={{1}}',
-        urlButtonVarExample: 'summer_lemons_2023',
-      },
-      // Vous pouvez ajouter d'autres cartes ici si nécessaire
-    ];
-
-    // Appeler la fonction avec les valeurs d'exemple
-    utils.sendCarouselMessage(
-      destinataire,
-      templateName,
-      languageCode,
-      category,
-      bubbleText,
-      bubbleTextVarExample,
-      cards,
     );
   }
   @Post('/6')
@@ -99,67 +102,51 @@ export class AppController {
       'https://quickchart.io/qr?text=32456789089786&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png',
     );
   }
-  @Post('/1')
-  async reqestLocation(@Body() body: any) {
-    const a = await this.appService.createTicket(
-      'Soirée récréative',
-      'Free pass',
-      '22660356506',
+  @Post('/delete-row')
+  async deleteRow(
+    @Body() body: { sheetName: string; id: string; spreadsheetId: string },
+  ) {
+    const { sheetName, id, spreadsheetId } = body;
+    await this.googleSheetService.deleteRowById(
+      sheetName,
+      'id',
+      id,
+      spreadsheetId,
     );
-    console.log(a);
-    return a;
+    return { message: 'Row deleted successfully' };
   }
-  @Post('/2')
-  async interactive() {
-    await utils
-      .sendButtonMessage(
-        '22660356506',
-        'test',
-        [
-          {
-            id: '54963888',
-            title: 'Payer',
-          },
-          {
-            id: '5496388',
-            title: 'Cancel',
-          },
-        ],
-        'test',
-      )
-      .then((result) => {
-        console.log(' Location');
-        console.log(result);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-    // await utils.sendFlow(
-    //   '1158395898550311',
-    //   '22660356506',
-    //   'Test',
-    //   'test',
-    //   'test',
-    //   'test',
-    // );
+
+  @Post('/update-row')
+  async updateRow(
+    @Body()
+    body: {
+      sheetName: string;
+      rowData: any;
+      id: string;
+
+      spreadsheetId: string;
+    },
+  ) {
+    const { sheetName, rowData, id, spreadsheetId } = body;
+    await this.googleSheetService.updateRowFromDictionary(
+      sheetName,
+      spreadsheetId,
+      rowData,
+      'id',
+      id,
+    );
+    return { message: 'Row updated successfully' };
   }
-  @Post('/3')
-  async list() {
-    utils.sendListMessage('22660356506', 'Test', 'Test', 'Test', 'Test', [
-      {
-        title: 'Test',
-        rows: [
-          { id: '1', title: 'Test', description: 'Test' },
-          { id: '2', title: 'Test', description: 'Test' },
-        ],
-      },
-    ]);
+  @Post('/add-row')
+  async addRow(
+    @Body() body: { sheetName: string; rowData: any; spreadsheetId: string },
+  ) {
+    const { sheetName, spreadsheetId, rowData } = body;
+    await this.googleSheetService.addRowFromDictionary(
+      sheetName,
+      spreadsheetId,
+      rowData,
+    );
+    return { message: 'Row added successfully' };
   }
-  @Post('/4')
-  async cta() {
-    utils.sendPayWithOrange('22660356506', '2000');
-  }
-  // @Post('/flow')
-  // async flow() {
-  // }
 }

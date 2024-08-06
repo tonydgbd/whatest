@@ -9,6 +9,7 @@ import { sleep } from 'openai/core';
 import { AppService } from './app.service';
 import * as admin from 'firebase-admin';
 import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d1c7.json';
+import { ConversationStateService } from './conversation-state/conversation-state.service';
 
 //https://www.google.com/maps/search/?api=1&query=47.5951518%2C-122.3316393
 admin.initializeApp({
@@ -17,7 +18,6 @@ admin.initializeApp({
     'https://fourevent-ea1dc-default-rtdb.europe-west1.firebasedatabase.app',
 });
 const eventService = new AppService();
-
 const interaction = {
   button_reply: [
     {
@@ -230,66 +230,24 @@ const interaction = {
 // import OpenAI from 'openai';
 config();
 
-// const openai = new OpenAI();
-
-// main();
-// eslint-disable-next-line @typescript-eslint/no-loss-of-precision
-// [
-//   {
-//     context: {
-//       from: '22654963888',
-//       id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgARGBI2QjY0MDRGMkQ4MDQ3RTlCRkEA'
-//     },
-//     from: '22660356506',
-//     id: 'wamid.HBgLMjI2NjAzNTY1MDYVAgASGBQzQTBCRkY1MDVDREFCQjdERTlGNQA=',
-//     timestamp: '1721941410',
-//     type: 'interactive',
-//     interactive: { type: 'nfm_reply', nfm_reply: [Object] }
-//   }
-// ]
-const processedWebhooks = new Set<string>();
-async function handleWebhook(
-  statusCode: number,
-  headers: IncomingHttpHeaders,
-  body?: WebhookObject,
-  response?: ServerResponse,
+type HandleFlowReplyCllBack = (body: any, from: any) => void;
+type HandleButtonClickCllBack = (body: any, from: any) => void;
+type HandleListClickCllBack = (body: any, from: any) => void;
+type HandleOrderCllBack = (body: any, from: any) => void;
+type HandleLocationCllBack = (body: any, from: any) => void;
+type HandleMessageCllBack = (body: any, from: any, from_name: string) => void;
+function handleMesage(
+  bd: any,
+  messageType: any,
+  from: string,
+  from_name: string,
+  handleFlowReply?: HandleFlowReplyCllBack,
+  handleButtonReply?: HandleButtonClickCllBack,
+  handleListReply?: HandleListClickCllBack,
+  handleOrder?: HandleOrderCllBack,
+  handleLocation?: HandleLocationCllBack,
+  handleMessage?: HandleMessageCllBack,
 ) {
-  if (!body) {
-    console.log('No body in webhook');
-    return;
-  }
-  console.log(JSON.stringify(body));
-
-  const bd = JSON.parse(JSON.stringify(body));
-
-  if (bd.entry[0].changes[0].value.messages === undefined) {
-    console.log('No messages in webhook');
-    return;
-  }
-  const messageType = bd.entry[0].changes[0].value.messages[0].type;
-  const from = bd.entry[0].changes[0].value.messages[0].from;
-  const from_name = bd.entry[0].changes[0].value.contacts[0].profile.name;
-  console.log(`Received message from ${from} of type ${messageType}`);
-  console.log(bd.entry[0].changes[0].value.messages[0].id);
-  const webhookId = bd.entry[0].changes[0].value.messages[0].id;
-
-  // Vérifier si le webhook a déjà été traité
-  if (processedWebhooks.has(webhookId)) {
-    console.log(`Webhook ${webhookId} déjà traité.`);
-    return;
-  }
-
-  // Marquer le webhook comme traité
-  processedWebhooks.add(webhookId);
-
-  // Traiter le webhook
-  try {
-    // Votre logique de traitement ici
-    console.log(`Traitement du webhook ${webhookId}`);
-    console.log(`Traitement du webhook ${bd}`);
-  } catch (error) {
-    console.error(`Erreur lors du traitement du webhook ${webhookId}:`, error);
-  }
   switch (messageType) {
     case 'interactive':
       const interactiveType =
@@ -337,162 +295,229 @@ async function handleWebhook(
       console.log('Handling location');
       handleLocation(
         bd.entry[0].changes[0]['value']['messages'][0]['location'],
+        from,
       );
       // Add your logic to handle location here
       break;
     default:
       console.log(`Unhandled message type: ${messageType}`);
   }
-  console.log('Webhook processed successfully');
+}
+
+async function handleWebhookforEcommerce(
+  statusCode: number,
+  headers: IncomingHttpHeaders,
+  body?: WebhookObject,
+  response?: ServerResponse,
+) {
+  if (!body) {
+    console.log('No body in webhook');
+    return;
+  }
+  enum steps {
+    initial,
+    first_message_send,
+    awaiting_order_message,
+    awaiting_location,
+    awaiting_payment_method,
+    awaiting_payment_confirmation,
+    end_of_conversation,
+  }
+
+  const conversationService = new ConversationStateService();
+
+  const bd = JSON.parse(JSON.stringify(body));
+  if (bd.entry[0].changes[0].value.messages == undefined) {
+    console.log('No message in webhook');
+    return;
+  }
+  const from = bd.entry[0].changes[0].value.messages[0].from;
+  const messageType = bd.entry[0].changes[0].value.messages[0].type;
+  const from_name = bd.entry[0].changes[0].value.contacts[0].profile.name;
+  console.log(`Received message from ${from} of type ${messageType}`);
+  // Récupérer l'état de la conversation de l'utilisateur
+  // eslint-disable-next-line no-var
+  var conversationState = await conversationService.getConversationState(from);
+  console.log(conversationState);
+  if (!conversationState) {
+    conversationState = { step: steps.initial, data: {} };
+  }
+
+  // Logique de traitement basée sur l'état de la conversation
+  switch (conversationState.step) {
+    case steps.initial:
+      // Récupérer le message de démarrage de l'utilisateur
+      await utils.sendText(
+        from,
+        `Bonjour ${from_name} je suis l'assistant de commande`,
+      );
+      await utils.sendText(
+        from,
+        `ci dessous les produits disponibles , veuillez faire votre choix et placer la commande`,
+      );
+      await utils.sendCatalogMessage(
+        from,
+        'Produit disponible ',
+        '6a2oF457UmRioaZ4B3ESpj',
+        '1',
+      );
+      conversationState.step = steps.awaiting_order_message;
+      break;
+    case steps.first_message_send:
+      // Récupérer la réponse de l'utilisateur
+      conversationState.step = steps.awaiting_order_message;
+      break;
+    case steps.awaiting_order_message:
+      // Récupérer la réponse de l'utilisateur
+      console.log(body);
+      handleMesage(
+        bd,
+        messageType,
+        from,
+        from_name,
+        null,
+        null,
+        null,
+        async (body: any, from: any) => {
+          console.log('Handling order message');
+          console.log(body);
+          // const bod = bd.entry[0].changes[0]['value']['messages'][0]['order'];
+          // {
+          //   catalog_id: '1772883193117356',
+          //   text: '',
+          //   product_items: [
+          //     {
+          //       product_retailer_id: '2',
+          //       quantity: 1,
+          //       item_price: 750,
+          //       currency: 'XOF'
+          //     }
+          //   ]
+          // }
+          let total = 0;
+          body.product_items.forEach((item) => {
+            total += item.item_price * item.quantity;
+          });
+          console.log(`Total : ${total} XOF`);
+          const data = {
+            order: body,
+          };
+          await utils.requestLocation(
+            'Cliquez sur le bouton ci-dessous pour partager votre localisation ',
+            from,
+          );
+          conversationState.step = steps.awaiting_location;
+          conversationState.data = data;
+          await conversationService.updateConversationState(
+            from,
+            conversationState,
+          );
+        },
+      );
+      break;
+    case steps.awaiting_location:
+      // Récupérer la réponse de l'utilisateur
+      if (messageType != 'location') {
+        if (response != null) {
+          response.writeHead(200, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ status: 'success' }));
+        }
+        return;
+      }
+      handleMesage(
+        bd,
+        messageType,
+        from,
+        from_name,
+        null,
+        null,
+        null,
+        null,
+        async (body, from) => {
+          console.log(body);
+          conversationState.step = steps.awaiting_payment_method;
+          conversationState.data.location = body;
+          await conversationService.updateConversationState(
+            from,
+            conversationState,
+          );
+          await utils.sendText(
+            from,
+            `Votre localisation a été enregistrée avec succès`,
+          );
+          await utils.sendText(
+            from,
+            `Pour terminer votre achat et recevoir votre ticket numerique vous allez devoir effectuer un depot Orange ou moov en utilisant le bouton qui suivra puis insere le numero utiliser pour faire le depot dans le formulaire qui suit`,
+          );
+          let total = 0;
+          conversationState.data.order.product_items.forEach((item) => {
+            total += item.item_price * item.quantity;
+          });
+          await utils.sendPayWithOrange(from, total.toString());
+          await sleep(5000); // Attendre 10 secondes pour le dépôt
+          await utils.sendFlow(
+            '1158395898550311',
+            from,
+            'Formulaire de confirmation du paiement',
+            'Taper votre numero sans l indicatif ',
+            'FUTURIX PAY',
+            `FTX_PAYMENT_${conversationState.data.order.catalog_id}_${from}_${total}`,
+          );
+          conversationState.step = steps.awaiting_payment_confirmation;
+          conversationState.total = total;
+          await conversationService.updateConversationState(
+            from,
+            conversationState,
+          );
+        },
+        null,
+      );
+      break;
+    case steps.awaiting_payment_confirmation:
+      // Récupérer la réponse de l'utilisateur a flow
+      handleMesage(
+        bd,
+        messageType,
+        from,
+        from_name,
+        async (body: any, from: any) => {
+          console.log(body);
+          const dt = JSON.parse(body.response_json);
+          const rs = await utils.checkPayment(
+            dt.numero,
+            conversationState.total.toString(),
+          );
+          console.log(rs.success);
+          if (rs.success == true) {
+            //register order
+          } else {
+            //handle order gdasza hfzavfewaadzcff1  23454655qwe7]0875432``1223r69-b
+          }
+        },
+      );
+      break;
+    case steps.awaiting_payment_confirmation:
+      // Récupérer la réponse de l'utilisateur
+      conversationState.step = steps.end_of_conversation;
+      break;
+    case steps.end_of_conversation:
+      // Récupérer la réponse de l'utilisateur
+      conversationState.step = steps.end_of_conversation;
+  }
+
+  // Mettre à jour l'état de la conversation de l'utilisateur
+  await conversationService.updateConversationState(from, conversationState);
+
   if (response != null) {
     response.writeHead(200, { 'Content-Type': 'application/json' });
     response.end(JSON.stringify({ status: 'success' }));
   }
 }
-async function handleLocation(body: any) {
-  console.log('Handling location message');
-  // {
-  //   latitude: 12.0,
-  //   longitude: 13.0,
-  // }
-  console.log(body);
-  const data = await utils.getDistance(
-    body.latitude,
-    body.longitude,
-    2.4043,
-    -1.577843,
-  );
-  console.log(data);
-  // Add your logic to handle location messages here
-}
-async function handleMessage(body: any, from: any, from_name: any) {
-  console.log('Handling message');
-  // { text: 'Test' }
-  console.log(body);
-  // const inter = interaction.text_reply.find((r) => r.trigger === body.text);
-  // console.log(inter);
-  // if (inter != undefined) {
-  //   inter.handle(body, from);
-  // }
-  await interaction.text_reply[0].handle(body, from, from_name);
-  // Add your logic to handle text messages here
-}
-async function handleOrder(body: any, from: any) {
-  console.log('Handling order message');
-  // {
-  //   catalog_id: '1772883193117356',
-  //   text: '',
-  //   product_items: [
-  //     {
-  //       product_retailer_id: '2',
-  //       quantity: 1,
-  //       item_price: 750,
-  //       currency: 'XOF'
-  //     }
-  //   ]
-  // }
-  let total = 0;
-  body.product_items.forEach((item) => {
-    total += item.item_price * item.quantity;
-  });
-  console.log(body);
-  await utils.requestLocation(
-    'Cliquez sur le bouton ci-dessous pour partager votre localisation ',
-    from,
-  );
-  await sleep(1000);
-  await utils.sendPayWithOrange(from, total.toString());
-  await sleep(1000);
-  await utils.sendFlow(
-    '1158395898550311',
-    '22660356506',
-    'Test',
-    'test',
-    'test',
-    'FTX_PAYMENT',
-  );
-  interaction.nfm_reply.push({
-    id: 'FTX_PAYMENT',
-    handle: async function (data: any, from: any) {
-      console.log(data);
-      const rs = await utils.checkPayment(data.numero, data.amount);
-      console.log(rs.success);
-      if (rs.success == true) {
-        utils.sendText(from, 'Paiment reussie');
-      } else {
-        utils.sendText(
-          from,
-          'Echec de la verification du paiment , taper ( /vr ) pour reesayer',
-        );
-        interaction.text_reply.push({
-          trigger: ['/vr'],
-          handle: async function () {
-            await utils.sendFlow(
-              '1158395898550311',
-              '22660356506',
-              'Test',
-              'test',
-              'test',
-              'FTX_PAYMENT',
-            );
-          },
-        });
-      }
-    },
-  });
-  // Add your logic to handle interactive messages here
-}
-
-function handleButtonReply(body: any, from: any) {
-  console.log('Handling button reply');
-  // { id: '5496388', title: 'Cancel' }
-  const interr = interaction.button_reply.find(
-    (element) => element.id === body.id,
-  );
-  if (interr != null) {
-    interr.handle(from);
-  } else {
-  }
-
-  // Add your logic to handle button replies here
-}
-function handleFlowReply(body: any, from: any) {
-  console.log('Handling button reply');
-  // {
-  //   response_json: '{"flow_token":"test","numero":"54963888","reseau":"0_ORANGE_Money"}',
-  //   body: 'Sent',
-  //   name: 'flow'
-  // }
-  console.log(body);
-  const response_json = JSON.parse(body.response_json);
-  const inter = interaction.nfm_reply.find(
-    (element) => element.id === response_json.flow_token,
-  );
-  if (inter != null) {
-    inter.handle(body.response_json, from);
-  }
-
-  // Add your logic to handle button replies here
-}
-
-function handleListReply(body: any, from: any) {
-  console.log('Handling list reply');
-  // { id: '1', title: 'Test', description: 'Test' }
-  const inter = interaction.list_reply.find((element) => element.id == body.id);
-  if (inter != null) {
-    inter.handle(from);
-  } else {
-    console.log('Interaction not found');
-  }
-  console.log(body);
-
-  // Add your logic to handle list replies here
-}
 
 async function bootstrap() {
   const wa = new WhatsApp(Number(process.env.WA_PHONE_NUMBER_ID));
   const app = await NestFactory.create(AppModule);
-  await wa.webhooks.start(handleWebhook);
+  await wa.webhooks.start(handleWebhookforEcommerce);
   console.log('is started now ' + wa.webhooks.isStarted());
   await app.listen(3001);
 }

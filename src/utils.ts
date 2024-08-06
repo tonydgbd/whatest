@@ -794,70 +794,6 @@ async function getSheetData() {
   }
 }
 
-async function addOrUpdateRow(
-  spreadsheetId: string,
-  sheetName: string,
-  columnName: string,
-  columnValue: string,
-  rowData: any[],
-) {
-  try {
-    const sheets = google.sheets({
-      version: 'v4',
-      auth: 'AIzaSyCCJR3i90PluxHX-NNn7Wp8WAg-o2ETlFw',
-    });
-    // Lire les données existantes de la feuille
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `${sheetName}!A:Z`,
-    });
-
-    const rows = response.data.values;
-    if (!rows || rows.length === 0) {
-      console.log('No data found.');
-      return;
-    }
-    console.log('Rows: ', rows[1]);
-
-    // Trouver l'index de la colonne
-    const headerRow = rows[1];
-    const columnIndex = headerRow.indexOf(columnName);
-    if (columnIndex === -1) {
-      console.log(`Column ${columnName} not found.`);
-      return;
-    }
-
-    // Rechercher la valeur de la colonne
-    let rowIndex = -1;
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i][columnIndex] === columnValue) {
-        rowIndex = i;
-        break;
-      }
-    }
-
-    if (rowIndex === -1) {
-      // Ajouter une nouvelle ligne si la valeur n'existe pas
-      sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: `${sheetName}!A:Z`,
-        valueInputOption: 'RAW',
-      });
-      console.log('Row added.');
-    } else {
-      // Mettre à jour la ligne existante
-      const range = `${sheetName}!A${rowIndex + 1}:Z${rowIndex + 1}`;
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range,
-        valueInputOption: 'RAW',
-      });
-      console.log('Row updated.');
-    }
-  } catch (error) {
-    console.error('Error updating or adding row:', error);
-  }
-}
 function sendCarouselMessage(
   destinataire: string,
   templateName: string,
@@ -987,7 +923,6 @@ function sendCarouselMessage(
 }
 export default {
   sendCarouselMessage,
-  addOrUpdateRow,
   getSheetData,
   sendPayWithOrange,
   sendInteractiveProductMessage,
