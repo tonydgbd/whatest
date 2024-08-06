@@ -19,6 +19,11 @@ export class AppController {
   getMessages(req: Request) {
     console.log(req.body);
   }
+  @Post('/1')
+  getit(@Body() data: any) {
+    console.log(data);
+    return;
+  }
   @Post('/0')
   async sendPayWithOrange() {
     const rowData = {

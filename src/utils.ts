@@ -9,9 +9,9 @@ const WA_BASE_URL = process.env.WA_BASE_URL || 'graph.facebook.com';
 const M4D_APP_ID = process.env.M4D_APP_ID || '2398012080587850';
 const M4D_APP_SECRET =
   process.env.M4D_APP_SECRET || '474f200db75856a6d418af09eaf470e7';
-const WA_PHONE_NUMBER_ID = process.env.WA_PHONE_NUMBER_ID || '243410425511216';
-const WA_BUSINESS_ACCOUNT_ID =
-  process.env.WA_BUSINESS_ACCOUNT_ID || '248885011630898';
+// const WA_PHONE_NUMBER_ID = process.env.WA_PHONE_NUMBER_ID || '243410425511216';
+// const WA_BUSINESS_ACCOUNT_ID =
+//   process.env.WA_BUSINESS_ACCOUNT_ID || '248885011630898';
 const CLOUD_API_VERSION = process.env.CLOUD_API_VERSION || 'v20.0';
 const CLOUD_API_ACCESS_TOKEN =
   process.env.CLOUD_API_ACCESS_TOKEN ||
@@ -32,7 +32,7 @@ const REQUEST_TIMEOUT = process.env.REQUEST_TIMEOUT
 
 const pipeline = promisify(stream.pipeline);
 
-async function uploadImage(imageUrl: string) {
+async function uploadImage(imageUrl: string, WA_PHONE_NUMBER_ID: string) {
   const data = new FormData();
 
   // Télécharger l'image depuis l'URL
@@ -63,7 +63,11 @@ async function uploadImage(imageUrl: string) {
   return imagedata.data;
 }
 
-function requestLocation(messageText: string, destinataire: string) {
+function requestLocation(
+  messageText: string,
+  destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
+) {
   const data = JSON.stringify({
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -79,11 +83,12 @@ function requestLocation(messageText: string, destinataire: string) {
       },
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
 function sendLocation(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   latitude: string,
   longitude: string,
   name: string,
@@ -101,9 +106,13 @@ function sendLocation(
       address: address,
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
-function sendImagebyId(destinataire: string, id: string) {
+function sendImagebyId(
+  destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
+  id: string,
+) {
   const data = JSON.stringify({
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -113,9 +122,13 @@ function sendImagebyId(destinataire: string, id: string) {
       id: id,
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
-function sendImage(destinataire: string, imageUrl: string) {
+function sendImage(
+  destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
+  imageUrl: string,
+) {
   const data = JSON.stringify({
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -125,10 +138,11 @@ function sendImage(destinataire: string, imageUrl: string) {
       link: imageUrl,
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 function sendDocument(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   documentUrl: string,
   filename: string,
 ) {
@@ -142,10 +156,11 @@ function sendDocument(
       filename: filename,
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 function sendTemplateMessage(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   templateName: string,
   languageCode: string,
   variables: any[] = [],
@@ -171,10 +186,11 @@ function sendTemplateMessage(
       ],
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 function sendInteractiveProductMessage(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   catalogId: string,
   productRetailerId: string,
   optionalBodyText: string = '',
@@ -199,10 +215,14 @@ function sendInteractiveProductMessage(
       },
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
-async function sendText(destinataire: string, messageText: string) {
+async function sendText(
+  destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
+  messageText: string,
+) {
   const data = JSON.stringify({
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -213,10 +233,11 @@ async function sendText(destinataire: string, messageText: string) {
       body: messageText,
     },
   });
-  await request(data);
+  await request(data, WA_PHONE_NUMBER_ID);
 }
 function replyText(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   messageText: string,
   replyMessageId: string,
 ) {
@@ -233,10 +254,10 @@ function replyText(
       body: messageText,
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
-async function request(data: any) {
+async function request(data: any, WA_PHONE_NUMBER_ID: string) {
   const config = {
     method: 'post',
     maxBodyLength: Infinity,
@@ -257,7 +278,11 @@ async function request(data: any) {
       throw error;
     });
 }
-function sendAudio(destinataire: string, audioUrl: string) {
+function sendAudio(
+  destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
+  audioUrl: string,
+) {
   const data = JSON.stringify({
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -267,10 +292,11 @@ function sendAudio(destinataire: string, audioUrl: string) {
       link: audioUrl,
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 function sendCatalogMessage(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   bodyText: string,
   thumbnailProductRetailerId: string,
   footerText: string,
@@ -296,11 +322,12 @@ function sendCatalogMessage(
       },
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
 function sendProductListMessage(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   headerType: string,
   headerText: string,
   bodyText: string,
@@ -339,7 +366,7 @@ function sendProductListMessage(
       },
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
 const processedWebhooks = new Set<string>();
@@ -366,6 +393,7 @@ async function handleWebhook(webhook: any) {
 }
 function sendProductMessage(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   bodyText: string,
   footerText: string,
   catalogId: string,
@@ -390,7 +418,7 @@ function sendProductMessage(
       },
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
 // {
@@ -413,6 +441,7 @@ interface TextHeader {
 }
 async function sendButtonMessage(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   bodyText: string,
   buttons: Array<{ id: string; title: string }>,
   footerText?: string,
@@ -448,11 +477,12 @@ async function sendButtonMessage(
       },
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
 function sendListMessage(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   headerText: string,
   bodyText: string,
   footerText: string,
@@ -492,10 +522,11 @@ function sendListMessage(
       },
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 function sendVideoMessage(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   videoUrl: string,
   captionText: string,
 ) {
@@ -509,11 +540,12 @@ function sendVideoMessage(
       caption: captionText,
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
 async function sendTemplateMessageWithFlow(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   templateName: string,
   flowId: string,
   screenName: string,
@@ -550,7 +582,7 @@ async function sendTemplateMessageWithFlow(
     },
   };
 
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 async function sendFlow(
   flowId: string,
@@ -559,6 +591,7 @@ async function sendFlow(
   flowMessagebody: string,
   flowMessagefooter: string,
   flow_token: string,
+  WA_PHONE_NUMBER_ID: string,
 ) {
   const data = {
     recipient_type: 'individual',
@@ -592,10 +625,13 @@ async function sendFlow(
       },
     },
   };
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
 
-async function uploadImagefromstorage(inagepath: string) {
+async function uploadImagefromstorage(
+  inagepath: string,
+  WA_PHONE_NUMBER_ID: string,
+) {
   const data = new FormData();
   data.append('messaging_product', 'whatsapp');
   data.append('file', fs.createReadStream(inagepath));
@@ -709,6 +745,7 @@ async function checkPayment(numero: string, montant: string) {
 }
 async function sendCallToAction(
   destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
   bodyText: string,
   footerText: string,
   callToActionText: string,
@@ -750,9 +787,13 @@ async function sendCallToAction(
       },
     },
   });
-  request(data);
+  request(data, WA_PHONE_NUMBER_ID);
 }
-async function sendPayWithOrange(destinataire: string, montantText: string) {
+async function sendPayWithOrange(
+  destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
+  montantText: string,
+) {
   await sendCallToAction(
     destinataire,
     'Payez via Orange Money',
@@ -760,6 +801,7 @@ async function sendPayWithOrange(destinataire: string, montantText: string) {
     'Lancer le paiement',
     'tel:*144*10*05690560*' + montantText + '#',
     'cta_url',
+    WA_PHONE_NUMBER_ID,
   );
 }
 
@@ -794,135 +836,136 @@ async function getSheetData() {
   }
 }
 
-function sendCarouselMessage(
-  destinataire: string,
-  templateName: string,
-  languageCode: string,
-  category: string,
-  bubbleText: string,
-  bubbleTextVarExample: string[],
-  cards: {
-    headerFormat: string;
-    headerHandle: string;
-    bodyText: string;
-    bodyTextVarExample: string[];
-    quickReplyButtonText: string;
-    urlButtonText: string;
-    urlButtonUrl: string;
-    urlButtonVarExample: string;
-  }[],
-) {
-  const data = JSON.stringify({
-    name: 'summer_carousel_promo_2023',
-    language: 'en_US',
-    category: 'MARKETING',
-    components: [
-      {
-        type: 'BODY',
-        text: 'Summer is here, and we have the freshest produce around! Use code {{1}} to get {{2}} off your next order.',
-        example: {
-          body_text: [['15OFF', '15%']],
-        },
-      },
-      {
-        type: 'CAROUSEL',
-        cards: [
-          {
-            components: [
-              {
-                type: 'HEADER',
-                format: 'IMAGE',
-                example: {
-                  header_handle: ['4::aW...'],
-                },
-              },
-              {
-                type: 'BODY',
-                text: 'Rare lemons for unique cocktails. Use code {{1}} to get {{2}} off all produce.',
-                example: {
-                  body_text: [['15OFF', '15%']],
-                },
-              },
-              {
-                type: 'BUTTONS',
-                buttons: [
-                  {
-                    type: 'QUICK_REPLY',
-                    text: 'Send more like this',
-                  },
-                  {
-                    type: 'URL',
-                    text: 'Buy now',
-                    url: 'https://www.luckyshrub.com/shop?promo={{1}}',
-                    example: [
-                      'https://www.luckyshrub.com/shop?promo=summer_lemons_2023',
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            components: [
-              {
-                type: 'HEADER',
-                format: 'IMAGE',
-                example: {
-                  header_handle: ['4::aW...'],
-                },
-              },
-              {
-                type: 'BODY',
-                text: 'Exotic fruit for unique cocktails! Use code {{1}} to get {{2}} off all exotic produce.',
-                example: {
-                  body_text: [['20OFFEXOTIC', '20%']],
-                },
-              },
-              {
-                type: 'BUTTONS',
-                buttons: [
-                  {
-                    type: 'QUICK_REPLY',
-                    text: 'Send more like this',
-                  },
-                  {
-                    type: 'URL',
-                    text: 'Buy now',
-                    url: 'https://www.luckyshrub.com/shop?promo={{1}}',
-                    example: [
-                      'https://www.luckyshrub.com/shop?promo=exotic_produce_2023',
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  });
-  const config = {
-    method: 'post',
-    maxBodyLength: Infinity,
-    url: `https://graph.facebook.com/${CLOUD_API_VERSION}/${WA_BUSINESS_ACCOUNT_ID}/message_templates`,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + CLOUD_API_ACCESS_TOKEN,
-    },
-    data: data,
-  };
+// function sendCarouselMessage(
+//   destinataire: string,
+//   WA_PHONE_NUMBER_ID: string,
+//   templateName: string,
+//   languageCode: string,
+//   category: string,
+//   bubbleText: string,
+//   bubbleTextVarExample: string[],
+//   cards: {
+//     headerFormat: string;
+//     headerHandle: string;
+//     bodyText: string;
+//     bodyTextVarExample: string[];
+//     quickReplyButtonText: string;
+//     urlButtonText: string;
+//     urlButtonUrl: string;
+//     urlButtonVarExample: string;
+//   }[],
+// ) {
+//   const data = JSON.stringify({
+//     name: 'summer_carousel_promo_2023',
+//     language: 'en_US',
+//     category: 'MARKETING',
+//     components: [
+//       {
+//         type: 'BODY',
+//         text: 'Summer is here, and we have the freshest produce around! Use code {{1}} to get {{2}} off your next order.',
+//         example: {
+//           body_text: [['15OFF', '15%']],
+//         },
+//       },
+//       {
+//         type: 'CAROUSEL',
+//         cards: [
+//           {
+//             components: [
+//               {
+//                 type: 'HEADER',
+//                 format: 'IMAGE',
+//                 example: {
+//                   header_handle: ['4::aW...'],
+//                 },
+//               },
+//               {
+//                 type: 'BODY',
+//                 text: 'Rare lemons for unique cocktails. Use code {{1}} to get {{2}} off all produce.',
+//                 example: {
+//                   body_text: [['15OFF', '15%']],
+//                 },
+//               },
+//               {
+//                 type: 'BUTTONS',
+//                 buttons: [
+//                   {
+//                     type: 'QUICK_REPLY',
+//                     text: 'Send more like this',
+//                   },
+//                   {
+//                     type: 'URL',
+//                     text: 'Buy now',
+//                     url: 'https://www.luckyshrub.com/shop?promo={{1}}',
+//                     example: [
+//                       'https://www.luckyshrub.com/shop?promo=summer_lemons_2023',
+//                     ],
+//                   },
+//                 ],
+//               },
+//             ],
+//           },
+//           {
+//             components: [
+//               {
+//                 type: 'HEADER',
+//                 format: 'IMAGE',
+//                 example: {
+//                   header_handle: ['4::aW...'],
+//                 },
+//               },
+//               {
+//                 type: 'BODY',
+//                 text: 'Exotic fruit for unique cocktails! Use code {{1}} to get {{2}} off all exotic produce.',
+//                 example: {
+//                   body_text: [['20OFFEXOTIC', '20%']],
+//                 },
+//               },
+//               {
+//                 type: 'BUTTONS',
+//                 buttons: [
+//                   {
+//                     type: 'QUICK_REPLY',
+//                     text: 'Send more like this',
+//                   },
+//                   {
+//                     type: 'URL',
+//                     text: 'Buy now',
+//                     url: 'https://www.luckyshrub.com/shop?promo={{1}}',
+//                     example: [
+//                       'https://www.luckyshrub.com/shop?promo=exotic_produce_2023',
+//                     ],
+//                   },
+//                 ],
+//               },
+//             ],
+//           },
+//         ],
+//       },
+//     ],
+//   });
+//   const config = {
+//     method: 'post',
+//     maxBodyLength: Infinity,
+//     url: `https://graph.facebook.com/${CLOUD_API_VERSION}/${WA_BUSINESS_ACCOUNT_ID}/message_templates`,
+//     headers: {
+//       'Content-Type': 'application/json',
+//       Authorization: 'Bearer ' + CLOUD_API_ACCESS_TOKEN,
+//     },
+//     data: data,
+//   };
 
-  axios
-    .request(config)
-    .then((response) => {
-      return response;
-    })
-    .catch((error) => {
-      throw error;
-    });
-}
+//   axios
+//     .request(config)
+//     .then((response) => {
+//       return response;
+//     })
+//     .catch((error) => {
+//       throw error;
+//     });
+// }
 export default {
-  sendCarouselMessage,
+  // sendCarouselMessage,
   getSheetData,
   sendPayWithOrange,
   sendInteractiveProductMessage,

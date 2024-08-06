@@ -248,59 +248,63 @@ function handleMesage(
   handleLocation?: HandleLocationCllBack,
   handleMessage?: HandleMessageCllBack,
 ) {
-  switch (messageType) {
-    case 'interactive':
-      const interactiveType =
-        bd.entry[0].changes[0]['value']['messages'][0]['interactive']['type'];
-      if (interactiveType === 'nfm_reply') {
-        console.log('Handling nfm reply');
-        handleFlowReply(
-          bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
-            'nfm_reply'
-          ],
+  try {
+    switch (messageType) {
+      case 'interactive':
+        const interactiveType =
+          bd.entry[0].changes[0]['value']['messages'][0]['interactive']['type'];
+        if (interactiveType === 'nfm_reply') {
+          console.log('Handling nfm reply');
+          handleFlowReply(
+            bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
+              'nfm_reply'
+            ],
+            from,
+          );
+        } else if (interactiveType === 'button_reply') {
+          handleButtonReply(
+            bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
+              'button_reply'
+            ],
+            from,
+          );
+        } else if (interactiveType === 'list_reply') {
+          handleListReply(
+            bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
+              'list_reply'
+            ],
+            from,
+          );
+        }
+        break;
+      case 'order':
+        handleOrder(
+          bd.entry[0].changes[0]['value']['messages'][0]['order'],
           from,
         );
-      } else if (interactiveType === 'button_reply') {
-        handleButtonReply(
-          bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
-            'button_reply'
-          ],
+        break;
+      case 'text':
+        console.log('Handling message');
+        handleMessage(
+          bd.entry[0].changes[0]['value']['messages'][0]['text'],
+          from,
+          from_name,
+        );
+        // Add your logic to handle messages here
+        break;
+      case 'location':
+        console.log('Handling location');
+        handleLocation(
+          bd.entry[0].changes[0]['value']['messages'][0]['location'],
           from,
         );
-      } else if (interactiveType === 'list_reply') {
-        handleListReply(
-          bd.entry[0].changes[0]['value']['messages'][0]['interactive'][
-            'list_reply'
-          ],
-          from,
-        );
-      }
-      break;
-    case 'order':
-      handleOrder(
-        bd.entry[0].changes[0]['value']['messages'][0]['order'],
-        from,
-      );
-      break;
-    case 'text':
-      console.log('Handling message');
-      handleMessage(
-        bd.entry[0].changes[0]['value']['messages'][0]['text'],
-        from,
-        from_name,
-      );
-      // Add your logic to handle messages here
-      break;
-    case 'location':
-      console.log('Handling location');
-      handleLocation(
-        bd.entry[0].changes[0]['value']['messages'][0]['location'],
-        from,
-      );
-      // Add your logic to handle location here
-      break;
-    default:
-      console.log(`Unhandled message type: ${messageType}`);
+        // Add your logic to handle location here
+        break;
+      default:
+        console.log(`Unhandled message type: ${messageType}`);
+    }
+  } catch (e) {
+    console.log(e);
   }
 }
 
@@ -323,6 +327,7 @@ async function handleWebhookforEcommerce(
     awaiting_payment_confirmation,
     end_of_conversation,
   }
+  console.log(JSON.stringify(body));
 
   const conversationService = new ConversationStateService();
 
@@ -334,6 +339,8 @@ async function handleWebhookforEcommerce(
   const from = bd.entry[0].changes[0].value.messages[0].from;
   const messageType = bd.entry[0].changes[0].value.messages[0].type;
   const from_name = bd.entry[0].changes[0].value.contacts[0].profile.name;
+  const WA_PHONE_NUMBER_ID =
+    bd.entry[0].changes[0].value.metadata.phone_number_id;
   console.log(`Received message from ${from} of type ${messageType}`);
   // Récupérer l'état de la conversation de l'utilisateur
   // eslint-disable-next-line no-var
@@ -350,16 +357,19 @@ async function handleWebhookforEcommerce(
       await utils.sendText(
         from,
         `Bonjour ${from_name} je suis l'assistant de commande`,
+        WA_PHONE_NUMBER_ID,
       );
       await utils.sendText(
         from,
         `ci dessous les produits disponibles , veuillez faire votre choix et placer la commande`,
+        WA_PHONE_NUMBER_ID,
       );
       await utils.sendCatalogMessage(
         from,
         'Produit disponible ',
         '6a2oF457UmRioaZ4B3ESpj',
         '1',
+        WA_PHONE_NUMBER_ID,
       );
       conversationState.step = steps.awaiting_order_message;
       break;
@@ -405,6 +415,7 @@ async function handleWebhookforEcommerce(
           await utils.requestLocation(
             'Cliquez sur le bouton ci-dessous pour partager votre localisation ',
             from,
+            WA_PHONE_NUMBER_ID,
           );
           conversationState.step = steps.awaiting_location;
           conversationState.data = data;
@@ -444,16 +455,22 @@ async function handleWebhookforEcommerce(
           await utils.sendText(
             from,
             `Votre localisation a été enregistrée avec succès`,
+            WA_PHONE_NUMBER_ID,
           );
           await utils.sendText(
             from,
             `Pour terminer votre achat et recevoir votre ticket numerique vous allez devoir effectuer un depot Orange ou moov en utilisant le bouton qui suivra puis insere le numero utiliser pour faire le depot dans le formulaire qui suit`,
+            WA_PHONE_NUMBER_ID,
           );
           let total = 0;
           conversationState.data.order.product_items.forEach((item) => {
             total += item.item_price * item.quantity;
           });
-          await utils.sendPayWithOrange(from, total.toString());
+          await utils.sendPayWithOrange(
+            from,
+            total.toString(),
+            WA_PHONE_NUMBER_ID,
+          );
           await sleep(5000); // Attendre 10 secondes pour le dépôt
           await utils.sendFlow(
             '1158395898550311',
@@ -462,6 +479,7 @@ async function handleWebhookforEcommerce(
             'Taper votre numero sans l indicatif ',
             'FUTURIX PAY',
             `FTX_PAYMENT_${conversationState.data.order.catalog_id}_${from}_${total}`,
+            WA_PHONE_NUMBER_ID,
           );
           conversationState.step = steps.awaiting_payment_confirmation;
           conversationState.total = total;
