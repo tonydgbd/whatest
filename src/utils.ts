@@ -480,7 +480,7 @@ async function sendButtonMessage(
   request(data, WA_PHONE_NUMBER_ID);
 }
 
-function sendListMessage(
+async function sendListMessage(
   destinataire: string,
   WA_PHONE_NUMBER_ID: string,
   headerText: string,
@@ -522,7 +522,7 @@ function sendListMessage(
       },
     },
   });
-  request(data, WA_PHONE_NUMBER_ID);
+ await request(data, WA_PHONE_NUMBER_ID);
 }
 function sendVideoMessage(
   destinataire: string,
@@ -796,12 +796,12 @@ async function sendPayWithOrange(
 ) {
   await sendCallToAction(
     destinataire,
+    WA_PHONE_NUMBER_ID,
     'Payez via Orange Money',
     'securise et rapide',
     'Lancer le paiement',
     'tel:*144*10*05690560*' + montantText + '#',
     'cta_url',
-    WA_PHONE_NUMBER_ID,
   );
 }
 

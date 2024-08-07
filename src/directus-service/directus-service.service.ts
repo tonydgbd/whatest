@@ -3,10 +3,13 @@ import {
   createDirectus,
   createItem,
   createItems,
+  readItem,
+  readItems,
   rest,
   staticToken,
 } from '@directus/sdk';
 import { Injectable } from '@nestjs/common';
+import * as request from 'supertest';
 interface Product {
   id: string;
   user_created: string;
@@ -74,50 +77,66 @@ export class DirectusServiceService {
     }
   }
   //   {"data":[{"id":"78e99ee2-3624-4a33-84c7-235ebd0774ed","user_created":"da4eefc5-7609-4ea4-9230-8ff63bcd60fc","date_created":"2024-08-05T18:39:07.322Z","user_updated":null,"date_updated":null,"total":123456,"numero_destinataire":"4567898765","point_de_livraison":{"type":"Point","coordinates":[-1.578119525787457,12.405334427366071]},"adresse_google_map":null,"details":1}]}
-  async createOrder(data: OrderData, from: string) {
+  async createOrder(data: OrderData, from: string, Wa: string) {
     //{"id":1,"user_created":"da4eefc5-7609-4ea4-9230-8ff63bcd60fc","date_created":"2024-08-05T18:39:07.312Z","user_updated":null,"date_updated":null,"product":1,"quantity":1234,"sous_total":2345678}
-    const details = await this.directus.request(
-      createItems<OrderDetail, any, any>(`detail_commande`, [
-        ...data.data.order.product_items.map((item) => ({
-          product: item.product_retailer_id,
-          quantity: item.quantity,
-          sous_total: item.item_price * item.quantity,
-        })),
-      ]),
-    );
-    const ids = [];
-    details.forEach((detail) => {
-      ids.push(detail.id);
-    });
-
-    console.log(ids);
-    //create order
-    const order = await this.directus.request(
-      createItem<any, any, any>(`Commande`, {
-        total: data.total,
-        numero_destinataire: from,
-        point_de_livraison: {
-          type: 'Point',
-          coordinates: [
-            data.data.location.longitude,
-            data.data.location.latitude,
-          ],
-        },
-        adresse_google_map: '',
-        // details: ids,
-      }),
-    );
-    //linking
-    ids.forEach(async (id) => {
-      await this.directus.request(
-        createItem<any, any, any>(`Commande_detail_commande`, {
-          Commande_id: order.id,
-          detail_commande_id: id,
+    try {
+      const compte = await this.directus.request(
+        readItems<any, any, any>('Commerce', {
+          filter: {
+            WA_PHONE_NUMBER_ID: {
+              _eq: Wa,
+            },
+          },
         }),
       );
-    });
+      console.log(compte);
+      const details = await this.directus.request(
+        createItems<OrderDetail, any, any>(`detail_commande`, [
+          ...data.data.order.product_items.map((item) => ({
+            product: '1',
+            quantity: item.quantity,
+            sous_total: item.item_price * item.quantity,
+          })),
+        ]),
+      );
+      const ids = [];
+      details.forEach((detail) => {
+        ids.push(detail.id);
+      });
 
-    console.log(order);
-    return order;
+      console.log(ids);
+      //create order
+      const order = await this.directus.request(
+        createItem<any, any, any>(`Commande`, {
+          total: data.total,
+          numero_destinataire: from,
+          compte: compte[0].id,
+          point_de_livraison: {
+            type: 'Point',
+            coordinates: [
+              data.data.location.latitude,
+              data.data.location.longitude,
+            ],
+          },
+          adresse_google_map: `https://www.google.com/maps/search/?api=1&query=${data.data.location.latitude},${data.data.location.longitude}`,
+          // details: ids,
+        }),
+      );
+      //linking
+      ids.forEach(async (id) => {
+        await this.directus.request(
+          createItem<any, any, any>(`Commande_detail_commande`, {
+            Commande_id: order.id,
+            detail_commande_id: id,
+          }),
+        );
+      });
+
+      console.log(order);
+      return order;
+    } catch (err) {
+      console.log(err);
+      throw new Error(err.message);
+    }
   }
 }

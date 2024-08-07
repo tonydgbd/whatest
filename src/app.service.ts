@@ -113,9 +113,10 @@ export class AppService {
   async saveEventImageID(
     eventImageUrl: string,
     eventname: string,
+    WhatsApp: string,
   ): Promise<any> {
     console.log('saveEventImageID', eventImageUrl, eventname);
-    const { id } = await utils.uploadImage(eventImageUrl);
+    const { id } = await utils.uploadImage(eventImageUrl, WhatsApp);
     console.log('id', id);
     const eventRef = await admin
       .firestore()
@@ -166,7 +167,7 @@ export class AppService {
       .get();
     const typ = types.docs[0];
     ticket.typeTicket = typ.data();
-    ticket.code = `${ev.id}${randomInt(99999999)}Whatsapp@${phonenumber}`;
+    ticket.code = `${ev.id}${randomInt(99999999)}Whatsapp${phonenumber}`;
     try {
       await typ.ref.update({
         vente: admin.firestore.FieldValue.increment(1),

@@ -13,11 +13,18 @@ export class ConversationStateService {
       await this.redisClient.connect();
     })();
   }
-  async getConversationState(userId: string) {
-    const state = await this.redisClient.get(userId);
+  async getConversationState(userId: string, Whatsapp_ph_id: string) {
+    const state = await this.redisClient.get(userId + '_' + Whatsapp_ph_id);
     return state ? JSON.parse(state) : null;
   }
-  async updateConversationState(userId: string, state: any) {
-    await this.redisClient.set(userId, JSON.stringify(state));
+  async updateConversationState(
+    userId: string,
+    state: any,
+    Whatsapp_ph_id: string,
+  ) {
+    await this.redisClient.set(
+      userId + '_' + Whatsapp_ph_id,
+      JSON.stringify(state),
+    );
   }
 }
