@@ -5,6 +5,7 @@ import * as FormData from 'form-data';
 import * as stream from 'stream';
 import { promisify } from 'util';
 import { google } from 'googleapis';
+import got from 'got';
 const WA_BASE_URL = process.env.WA_BASE_URL || 'graph.facebook.com';
 const M4D_APP_ID = process.env.M4D_APP_ID || '2398012080587850';
 const M4D_APP_SECRET =
@@ -522,7 +523,7 @@ async function sendListMessage(
       },
     },
   });
- await request(data, WA_PHONE_NUMBER_ID);
+  await request(data, WA_PHONE_NUMBER_ID);
 }
 function sendVideoMessage(
   destinataire: string,
@@ -733,7 +734,14 @@ async function checkPayment(numero: string, montant: string) {
   };
   try {
     console.log(data);
-    const rs = await axios.request(config);
+    const rs = await axios.post(config.url, JSON.stringify(data));
+    const { data } = await got
+      .post('https://httpbin.org/anything', {
+        json: {
+          hello: 'world',
+        },
+      })
+      .json();
     return rs.data;
   } catch (error) {
     console.log(error);
