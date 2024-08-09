@@ -713,14 +713,21 @@ async function getDistance(
     };
   }
 }
-async function checkPayment(numero: string, montant: string) {
-  const data = JSON.stringify({
+async function checkPayment(
+  numero: string,
+  montant: string,
+  isorange: boolean,
+) {
+  const data = {
     api_key: '2pKOZHdl8SC-_6g4WO94nhmZD2vWfIth',
-    app_id: '91e984af-9993-4aad-9005-f69156333e42',
+    app_id:
+      isorange == true
+        ? '91e984af-9993-4aad-9005-f69156333e42'
+        : '1c381fdb-b7aa-43e7-ae87-7dc45bc0309c',
     amount: montant,
     phonenumber: numero,
-    orange: true,
-  });
+    orange: isorange,
+  };
 
   const config = {
     method: 'post',
@@ -734,11 +741,11 @@ async function checkPayment(numero: string, montant: string) {
   try {
     console.log(data);
 
-    const dt = await axios.post('https://httpbin.org/anything', {
-      json: {
-        hello: 'world',
-      },
-    });
+    const dt = await axios.post(
+      'https://shark-app-xeyhn.ondigitalocean.app/pay/control/phone_number',
+      data,
+    );
+    console.log(dt.data);
     return dt.data;
   } catch (error) {
     console.log(error);

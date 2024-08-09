@@ -69,7 +69,7 @@ type ListBody = {
   description: string;
 };
 type MessageBody = {
-  text: string;
+  body: string;
 };
 
 type HandleFlowReplyCllBack = (body: any, from: any) => void;
@@ -92,7 +92,7 @@ type HandleMessageFunction = {
   handleListReply?: HandleListClickCllBack;
   handleOrder?: HandleOrderCllBack;
   handleLocation?: HandleLocationCllBack;
-  handleMessage?: HandleMessageCllBack;
+  handleText?: HandleMessageCllBack;
 };
 function handleMesage(HandleMessageFunction: HandleMessageFunction) {
   switch (HandleMessageFunction.messageType) {
@@ -104,7 +104,7 @@ function handleMesage(HandleMessageFunction: HandleMessageFunction) {
       if (interactiveType === 'nfm_reply') {
         console.log('Handling nfm reply');
         if (HandleMessageFunction.handleFlowReply == null) {
-          throw new Error('handleFlowReply is not defined');
+          throw Error('handleFlowReply is not defined');
         }
         HandleMessageFunction.handleFlowReply(
           HandleMessageFunction.bd.entry[0].changes[0]['value']['messages'][0][
@@ -114,7 +114,7 @@ function handleMesage(HandleMessageFunction: HandleMessageFunction) {
         );
       } else if (interactiveType === 'button_reply') {
         if (HandleMessageFunction.handleButtonReply == null) {
-          throw new Error('handleButtonReply is not defined');
+          throw Error('handleButtonReply is not defined');
         }
         HandleMessageFunction.handleButtonReply(
           HandleMessageFunction.bd.entry[0].changes[0]['value']['messages'][0][
@@ -124,7 +124,7 @@ function handleMesage(HandleMessageFunction: HandleMessageFunction) {
         );
       } else if (interactiveType === 'list_reply') {
         if (HandleMessageFunction.handleListReply == null) {
-          throw new Error('handleListReply is not defined');
+          throw Error('handleListReply is not defined');
         }
         HandleMessageFunction.handleListReply(
           HandleMessageFunction.bd.entry[0].changes[0]['value']['messages'][0][
@@ -136,7 +136,7 @@ function handleMesage(HandleMessageFunction: HandleMessageFunction) {
       break;
     case 'order':
       if (HandleMessageFunction.handleOrder == null) {
-        throw new Error('handleOrder is not defined');
+        throw Error('handleOrder is not defined');
       }
 
       HandleMessageFunction.handleOrder(
@@ -147,11 +147,11 @@ function handleMesage(HandleMessageFunction: HandleMessageFunction) {
       );
       break;
     case 'text':
-      if (HandleMessageFunction.handleMessage == null) {
-        throw new Error('handleMessage is not defined');
+      if (HandleMessageFunction.handleText == null) {
+        throw Error('handleMessage is not defined');
       }
       console.log('Handling message');
-      HandleMessageFunction.handleMessage(
+      HandleMessageFunction.handleText(
         HandleMessageFunction.bd.entry[0].changes[0]['value']['messages'][0][
           'text'
         ],
@@ -163,7 +163,7 @@ function handleMesage(HandleMessageFunction: HandleMessageFunction) {
     case 'location':
       console.log('Handling location');
       if (HandleMessageFunction.handleLocation == null) {
-        throw new Error('handleLocation is not defined');
+        throw Error('handleLocation is not defined');
       }
       HandleMessageFunction.handleLocation(
         HandleMessageFunction.bd.entry[0].changes[0]['value']['messages'][0][
@@ -234,178 +234,195 @@ async function handleWebhookforEcommerce(
     if (!conversationState) {
       conversationState = { step: steps.initial, data: {} };
     }
-
-    // Logique de traitement basée sur l'état de la conversation
-    switch (conversationState.step) {
-      case steps.initial:
-        // Récupérer le message de démarrage de l'utilisateur
-        await utils.sendText(
-          from,
-          WA_PHONE_NUMBER_ID,
-          `Bonjour ${from_name} je suis l'assistant de commande`,
-        );
-        await utils.sendText(
-          from,
-          WA_PHONE_NUMBER_ID,
-          `ci dessous les produits disponibles , veuillez faire votre choix et placer la commande`,
-        );
-        await utils.sendCatalogMessage(
-          from,
-          WA_PHONE_NUMBER_ID,
-          'Produit disponible ',
-          'DikMJQdsD6KWbAWSTKM2Gz',
-          '1',
-        );
-        conversationState.step = steps.awaiting_order_message;
-        break;
-      case steps.first_message_send:
-        // Récupérer la réponse de l'utilisateur
-        conversationState.step = steps.awaiting_order_message;
-        break;
-      case steps.awaiting_order_message:
-        // Récupérer la réponse de l'utilisateur
-        console.log(body);
-        handleMesage({
-          bd,
-          messageType,
-          from,
-          from_name,
-          handleOrder: async (body: any, from: any) => {
-            console.log('Handling order message');
-            console.log(body);
-            let total = 0;
-            body.product_items.forEach((item) => {
-              total += item.item_price * item.quantity;
-            });
-            console.log(`Total : ${total} XOF`);
-            const data = {
-              order: body,
-            };
-            await utils.requestLocation(
-              'Cliquez sur le bouton ci-dessous pour partager votre localisation ',
-              from,
-              WA_PHONE_NUMBER_ID,
-            );
-            conversationState.step = steps.awaiting_location;
-            conversationState.data = data;
-            await conversationService.updateConversationState(
-              from,
-              conversationState,
-              WA_PHONE_NUMBER_ID,
-            );
-          },
-        });
-        break;
-      case steps.awaiting_location:
-        // Récupérer la réponse de l'utilisateur
-        if (messageType != 'location') {
-          if (response != null) {
-            response.writeHead(200, { 'Content-Type': 'application/json' });
-            response.end(JSON.stringify({ status: 'success' }));
-          }
-          return;
-        }
-        handleMesage({
-          bd,
-          messageType,
-          from,
-          from_name,
-          handleLocation: async (body, from) => {
-            console.log(body);
-            conversationState.step = steps.awaiting_payment_method;
-            conversationState.data.location = body;
-            await conversationService.updateConversationState(
-              from,
-              conversationState,
-              WA_PHONE_NUMBER_ID,
-            );
-            await utils.sendText(
-              from,
-              WA_PHONE_NUMBER_ID,
-              `Votre localisation a été enregistrée avec succès`,
-            );
-            await utils.sendText(
-              from,
-              WA_PHONE_NUMBER_ID,
-              `Pour terminer votre achat et recevoir votre ticket numerique vous allez devoir effectuer un depot Orange ou moov en utilisant le bouton qui suivra puis insere le numero utiliser pour faire le depot dans le formulaire qui suit`,
-            );
-            let total = 0;
-            conversationState.data.order.product_items.forEach((item) => {
-              total += item.item_price * item.quantity;
-            });
-            await utils.sendPayWithOrange(
-              from,
-              WA_PHONE_NUMBER_ID,
-              total.toString(),
-            );
-            await sleep(5000); // Attendre 10 secondes pour le dépôt
-            await utils.sendFlow(
-              '1158395898550311',
-              from,
-              'Formulaire de confirmation du paiement',
-              'Taper votre numero sans l indicatif ',
-              'FUTURIX PAY',
-              `FTX_PAYMENT_${conversationState.data.order.catalog_id}_${from}_${total}`,
-              WA_PHONE_NUMBER_ID,
-            );
-            conversationState.step = steps.awaiting_payment_confirmation;
-            conversationState.total = total;
-            await conversationService.updateConversationState(
-              from,
-              conversationState,
-              WA_PHONE_NUMBER_ID,
-            );
-          },
-        });
-        break;
-      case steps.awaiting_payment_confirmation:
-        // Récupérer la réponse de l'utilisateur a flow
-        handleMesage({
-          bd,
-          messageType,
-          from,
-          from_name,
-          handleFlowReply: async (body: any, from: any) => {
-            const directusService = new DirectusServiceService();
-            console.log(body);
-            const dt = JSON.parse(body.response_json);
-            const rs = await utils.checkPayment(
-              dt.numero,
-              conversationState.total.toString(),
-            );
-            console.log(rs.success);
-            if (true) {
-              //register order
-              directusService.createOrder(
-                conversationState,
+    try {
+      // Logique de traitement basée sur l'état de la conversation
+      switch (conversationState.step) {
+        case steps.initial:
+          // Récupérer le message de démarrage de l'utilisateur
+          await utils.sendText(
+            from,
+            WA_PHONE_NUMBER_ID,
+            `Bonjour ${from_name} je suis l'assistant de commande`,
+          );
+          await utils.sendText(
+            from,
+            WA_PHONE_NUMBER_ID,
+            `ci dessous les produits disponibles , veuillez faire votre choix et placer la commande`,
+          );
+          await utils.sendCatalogMessage(
+            from,
+            WA_PHONE_NUMBER_ID,
+            'Produit disponible ',
+            'DikMJQdsD6KWbAWSTKM2Gz',
+            '1',
+          );
+          conversationState.step = steps.awaiting_order_message;
+          break;
+        case steps.first_message_send:
+          // Récupérer la réponse de l'utilisateur
+          conversationState.step = steps.awaiting_order_message;
+          break;
+        case steps.awaiting_order_message:
+          // Récupérer la réponse de l'utilisateur
+          console.log(body);
+          handleMesage({
+            bd,
+            messageType,
+            from,
+            from_name,
+            handleOrder: async (body: any, from: any) => {
+              console.log('Handling order message');
+              console.log(body);
+              let total = 0;
+              body.product_items.forEach((item) => {
+                total += item.item_price * item.quantity;
+              });
+              console.log(`Total : ${total} XOF`);
+              const data = {
+                order: body,
+              };
+              await utils.requestLocation(
+                'Cliquez sur le bouton ci-dessous pour partager votre localisation ',
                 from,
                 WA_PHONE_NUMBER_ID,
               );
-              await utils.sendText(
-                from,
-                WA_PHONE_NUMBER_ID,
-
-                `Votre commande a été enregistrée avec succès`,
-              );
-              conversationState.step = steps.end_of_conversation;
+              conversationState.step = steps.awaiting_location;
+              conversationState.data = data;
               await conversationService.updateConversationState(
                 from,
                 conversationState,
                 WA_PHONE_NUMBER_ID,
               );
-            } else {
-              //handle order gdasza hfzavfewaadzcff1  23454655qwe7]0875432``1223r69-b
+            },
+          });
+          break;
+        case steps.awaiting_location:
+          // Récupérer la réponse de l'utilisateur
+          if (messageType != 'location') {
+            if (response != null) {
+              response.writeHead(200, { 'Content-Type': 'application/json' });
+              response.end(JSON.stringify({ status: 'success' }));
             }
-          },
-        });
-        break;
-      case steps.awaiting_payment_confirmation:
-        // Récupérer la réponse de l'utilisateur
-        conversationState.step = steps.end_of_conversation;
-        break;
-      case steps.end_of_conversation:
-        // Récupérer la réponse de l'utilisateur
-        conversationState.step = steps.end_of_conversation;
+            return;
+          }
+          handleMesage({
+            bd,
+            messageType,
+            from,
+            from_name,
+            handleLocation: async (body, from) => {
+              console.log(body);
+              conversationState.step = steps.awaiting_payment_method;
+              conversationState.data.location = body;
+              await conversationService.updateConversationState(
+                from,
+                conversationState,
+                WA_PHONE_NUMBER_ID,
+              );
+              await utils.sendText(
+                from,
+                WA_PHONE_NUMBER_ID,
+                `Votre localisation a été enregistrée avec succès`,
+              );
+              await utils.sendText(
+                from,
+                WA_PHONE_NUMBER_ID,
+                `Pour terminer votre achat et recevoir votre ticket numerique vous allez devoir effectuer un depot Orange ou moov en utilisant le bouton qui suivra puis insere le numero utiliser pour faire le depot dans le formulaire qui suit`,
+              );
+              let total = 0;
+              conversationState.data.order.product_items.forEach((item) => {
+                total += item.item_price * item.quantity;
+              });
+              await utils.sendPayWithOrange(
+                from,
+                WA_PHONE_NUMBER_ID,
+                total.toString(),
+              );
+              await sleep(5000); // Attendre 10 secondes pour le dépôt
+              await utils.sendFlow(
+                '1158395898550311',
+                from,
+                'Formulaire de confirmation du paiement',
+                'Taper votre numero sans l indicatif ',
+                'FUTURIX PAY',
+                `FTX_PAYMENT_${conversationState.data.order.catalog_id}_${from}_${total}`,
+                WA_PHONE_NUMBER_ID,
+              );
+              conversationState.step = steps.awaiting_payment_confirmation;
+              conversationState.total = total;
+              await conversationService.updateConversationState(
+                from,
+                conversationState,
+                WA_PHONE_NUMBER_ID,
+              );
+            },
+          });
+          break;
+        case steps.awaiting_payment_confirmation:
+          // Récupérer la réponse de l'utilisateur a flow
+          handleMesage({
+            bd,
+            messageType,
+            from,
+            from_name,
+            handleFlowReply: async (body: any, from: any) => {
+              const directusService = new DirectusServiceService();
+              console.log(body);
+              const dt = JSON.parse(body.response_json);
+              const isorange: boolean = dt.reseau == '0_ORANGE_Money';
+              const rs = await utils.checkPayment(
+                dt.numero,
+                conversationState.total.toString(),
+                isorange,
+              );
+              console.log(rs.success);
+              if (true) {
+                //register order
+                directusService.createOrder(
+                  conversationState,
+                  from,
+                  WA_PHONE_NUMBER_ID,
+                );
+                await utils.sendText(
+                  from,
+                  WA_PHONE_NUMBER_ID,
+
+                  `Votre commande a été enregistrée avec succès`,
+                );
+                conversationState.step = steps.end_of_conversation;
+                await conversationService.updateConversationState(
+                  from,
+                  conversationState,
+                  WA_PHONE_NUMBER_ID,
+                );
+              } else {
+                //handle order gdasza hfzavfewaadzcff1  23454655qwe7]0875432``1223r69-b
+              }
+            },
+          });
+          break;
+        case steps.awaiting_payment_confirmation:
+          // Récupérer la réponse de l'utilisateur
+          conversationState.step = steps.end_of_conversation;
+          break;
+        case steps.end_of_conversation:
+          // Récupérer la réponse de l'utilisateur
+          conversationState.step = steps.end_of_conversation;
+      }
+    } catch (e) {
+      console.log('Error during ', e);
+      conversationState.step = steps.initial;
+      await conversationService.updateConversationState(
+        from,
+        conversationState,
+        WA_PHONE_NUMBER_ID,
+      );
+      await utils.sendText(
+        from,
+        WA_PHONE_NUMBER_ID,
+        'Une erreur s est produite, veuillez reessayer',
+      );
+      handleWebhookforEcommerce(statusCode, headers, body, response);
     }
 
     // Mettre à jour l'état de la conversation de l'utilisateur
@@ -668,14 +685,16 @@ async function handleWebhookforEcommerce(
             handleFlowReply: async (body, from) => {
               console.log(body);
               const dt = JSON.parse(body.response_json);
+              const isorange: boolean = dt.reseau == '0_ORANGE_Money';
               try {
                 const rs = await utils.checkPayment(
                   dt.numero,
                   (conversationState.data.event.tickets as typeTicket[])
                     .find((t) => t.name == conversationState.data.ticket)
                     .prix.toString(),
+                  isorange,
                 );
-                console.log(rs.success);
+                console.log(rs);
                 if (rs.success == true) {
                   utils.sendText(from, WA_PHONE_NUMBER_ID, 'Paiment reussie');
                   const code = await eventService.createTicket(
@@ -694,9 +713,13 @@ async function handleWebhookforEcommerce(
                     WA_PHONE_NUMBER_ID,
                     `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,
                   );
-                  conversationState.step =
-                    stepsEventBooking.end_of_conversation;
+                  conversationState.step = stepsEventBooking.initial;
                   conversationState.data.eventticket = `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`;
+                  await utils.sendText(
+                    from,
+                    WA_PHONE_NUMBER_ID,
+                    `Merci d'avoir fait confiance a EasyPass, Bonne Continuation !! `,
+                  );
                   await conversationService.updateConversationState(
                     conversationState,
                     from,
@@ -738,8 +761,9 @@ async function handleWebhookforEcommerce(
             messageType,
             from,
             from_name,
-            handleMessage: async (body, from) => {
-              if (body.text.toLowerCase().includes('/vr')) {
+            handleText: async (body, from) => {
+              console.log(body);
+              if (body.body.toLowerCase().includes('/vr')) {
                 await utils.sendFlow(
                   '1532268067711776',
                   from,
@@ -751,11 +775,17 @@ async function handleWebhookforEcommerce(
                 );
                 conversationState.step =
                   stepsEventBooking.awaiting_payment_confirmation;
-              } else if (body.text.toLowerCase().includes('/annuler')) {
-                conversationState.step = stepsEventBooking.initial;
-                conversationService.updateConversationState(
-                  conversationState,
+                await conversationService.updateConversationState(
                   from,
+                  conversationState,
+                  WA_PHONE_NUMBER_ID,
+                );
+              } else if (body.body.toLowerCase().includes('/annuler')) {
+                conversationState.step = stepsEventBooking.initial;
+                await conversationService.updateConversationState(
+                  from,
+                  conversationState,
+
                   WA_PHONE_NUMBER_ID,
                 );
               }
@@ -778,10 +808,12 @@ async function handleWebhookforEcommerce(
       );
       handleWebhookforEcommerce(statusCode, headers, body, response);
     }
-    if (response != null) {
-      response.writeHead(200, { 'Content-Type': 'application/json' });
-      response.end(JSON.stringify({ status: 'success' }));
-    }
+    try {
+      if (response != null) {
+        await response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ status: 'success' }));
+      }
+    } catch (e) {}
   }
 }
 
@@ -791,5 +823,6 @@ async function bootstrap() {
   console.log(process.memoryUsage());
   await wa.webhooks.start(handleWebhookforEcommerce);
   console.log('is started now ' + wa.webhooks.isStarted());
+  app.listen(3001);
 }
 bootstrap();
