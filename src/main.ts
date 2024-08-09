@@ -5,12 +5,12 @@ import { config } from 'dotenv';
 import { IncomingHttpHeaders, ServerResponse } from 'http';
 import { WebhookObject } from 'whatsapp/build/types/webhooks';
 import utils from './utils';
-import { sleep } from 'openai/core';
 import { AppService } from './app.service';
 import * as admin from 'firebase-admin';
 import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d1c7.json';
 import { ConversationStateService } from './conversation-state/conversation-state.service';
 import { DirectusServiceService } from './directus-service/directus-service.service';
+import { sleep } from '@directus/sdk';
 type typeTicket = {
   showqty: boolean;
   hiddenuntil: {

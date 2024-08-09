@@ -5,7 +5,6 @@ import * as FormData from 'form-data';
 import * as stream from 'stream';
 import { promisify } from 'util';
 import { google } from 'googleapis';
-import {got} from 'got';
 const WA_BASE_URL = process.env.WA_BASE_URL || 'graph.facebook.com';
 const M4D_APP_ID = process.env.M4D_APP_ID || '2398012080587850';
 const M4D_APP_SECRET =
@@ -734,15 +733,13 @@ async function checkPayment(numero: string, montant: string) {
   };
   try {
     console.log(data);
-    const rs = await axios.post(config.url, JSON.stringify(data));
-    const { data } = await got
-      .post('https://httpbin.org/anything', {
-        json: {
-          hello: 'world',
-        },
-      })
-      .json();
-    return rs.data;
+
+    const dt = await axios.post('https://httpbin.org/anything', {
+      json: {
+        hello: 'world',
+      },
+    });
+    return dt.data;
   } catch (error) {
     console.log(error);
     return {
