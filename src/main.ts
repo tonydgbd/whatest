@@ -791,6 +791,6 @@ async function bootstrap() {
   console.log(process.memoryUsage());
   await wa.webhooks.start(handleWebhookforEcommerce);
   console.log('is started now ' + wa.webhooks.isStarted());
-  await app.listen(3001);
+  // await app.listen(3001);
 }
 bootstrap();

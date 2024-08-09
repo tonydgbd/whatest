@@ -15,7 +15,6 @@ RUN npm install
 RUN npm run build
 
 # Exposer le port sur lequel l'application va écouter
-EXPOSE 3001
 EXPOSE 3000
 
 # Définir la commande pour démarrer l'application
