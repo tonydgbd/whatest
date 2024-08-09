@@ -33,7 +33,7 @@
     "redis": "^4.7.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-     "whatsapp": "github:GabrielBragaGit/WhatsApp-Nodejs-SDK"
+     "whatsapp": "github:tonydgbd/WhatsApp-Nodejs-SDK"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
