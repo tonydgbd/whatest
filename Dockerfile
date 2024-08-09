@@ -3,6 +3,7 @@ FROM node:20-alpine
 
 # Définir le répertoire de travail dans le conteneur
 COPY . /app
+COPY ./.env /app
 
 WORKDIR /app
 
