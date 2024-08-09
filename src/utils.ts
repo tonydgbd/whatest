@@ -5,7 +5,7 @@ import * as FormData from 'form-data';
 import * as stream from 'stream';
 import { promisify } from 'util';
 import { google } from 'googleapis';
-import got from 'got';
+import {got} from 'got';
 const WA_BASE_URL = process.env.WA_BASE_URL || 'graph.facebook.com';
 const M4D_APP_ID = process.env.M4D_APP_ID || '2398012080587850';
 const M4D_APP_SECRET =

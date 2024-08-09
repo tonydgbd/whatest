@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { createClient } from 'redis';
 @Injectable()
 export class ConversationStateService {
-  redisClient = createClient();
+  redisClient = createClient({
+    url: 'redis://default:Kingdgbd226@easywhatsapp_redis:6379',
+  });
 
   constructor() {
     this.redisClient.on('error', (err) =>
