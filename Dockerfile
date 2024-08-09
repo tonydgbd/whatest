@@ -16,6 +16,7 @@ RUN npm run build
 
 # Exposer le port sur lequel l'application va écouter
 EXPOSE 3000
+EXPOSE 3001
 
 # Définir la commande pour démarrer l'application
 CMD ["node", "dist/src/main.js"]
