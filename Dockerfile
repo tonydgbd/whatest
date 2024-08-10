@@ -18,5 +18,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Définir la commande pour démarrer l'application
-# CMD ["node", "dist/src/main.js"]
-RUN npm run start
+CMD ["node", "dist/src/main.js"]

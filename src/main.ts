@@ -819,10 +819,10 @@ async function handleWebhookforEcommerce(
 
 async function bootstrap() {
   const wa = new WhatsApp(Number(process.env.WA_PHONE_NUMBER_ID));
-  const app = await NestFactory.create(AppModule);
+  await NestFactory.create(AppModule);
   console.log(process.memoryUsage());
   await wa.webhooks.start(handleWebhookforEcommerce);
-  console.log('is started now ' + wa.webhooks.isStarted());
-  app.listen(3001);
+  // console.log('is started now ' + wa.webhooks.isStarted());
+  // app.listen(3001);
 }
 bootstrap();
