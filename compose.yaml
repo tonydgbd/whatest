@@ -27,8 +27,6 @@ services:
       MAX_RETRIES_AFTER_WAIT: 3 // ou une autre valeur appropriée
       REQUEST_TIMEOUT: 5000
 
-    ports:
-      - 3000:3000
 
 
 # The commented out section below is an example of how to define a PostgreSQL
