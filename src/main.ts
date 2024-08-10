@@ -11,6 +11,7 @@ import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d
 import { ConversationStateService } from './conversation-state/conversation-state.service';
 import { DirectusServiceService } from './directus-service/directus-service.service';
 import { sleep } from '@directus/sdk';
+import { EventEmitter } from 'events';
 type typeTicket = {
   showqty: boolean;
   hiddenuntil: {
@@ -818,6 +819,7 @@ async function handleWebhookforEcommerce(
 }
 
 async function bootstrap() {
+  EventEmitter.defaultMaxListeners = 20;
   const wa = new WhatsApp(Number(process.env.WA_PHONE_NUMBER_ID));
   await NestFactory.create(AppModule);
   console.log(process.memoryUsage());
