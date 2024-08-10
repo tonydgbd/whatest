@@ -1,5 +1,5 @@
 # Utiliser une image Node.js officielle comme image de base
-FROM node:22-alpine
+FROM node:20-alpine
 
 # Définir le répertoire de travail dans le conteneur
 COPY . /app
@@ -13,7 +13,7 @@ RUN npm install
 
 # Construire le projet
 RUN npm run build
-EXPOSE 3000
+EXPOSE 8080
 
 CMD ["node", "dist/src/main.js"]
 
