@@ -27,6 +27,9 @@ export class ConversationStateService {
     await this.redisClient.set(
       userId + '_' + Whatsapp_ph_id,
       JSON.stringify(state),
+      {
+        "EXAT": Date.now() + 24 * 60 * 60 * 1000,
+      }
     );
   }
 }
