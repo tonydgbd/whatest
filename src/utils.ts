@@ -817,6 +817,22 @@ async function sendPayWithOrange(
   );
 }
 
+async function sendPayWithMoov(
+  destinataire: string,
+  WA_PHONE_NUMBER_ID: string,
+  montantText: string,
+) {
+  await sendCallToAction(
+    destinataire,
+    WA_PHONE_NUMBER_ID,
+    'Payez via MOOV Money',
+    'securise et rapide',
+    'Lancer le paiement',
+    'tel:*555*4*1*03301404*' + montantText + '#',
+    'cta_url',
+  );
+}
+
 async function getSheetData() {
   /**
    * Gets cell values from a Spreadsheet.
@@ -980,6 +996,7 @@ export default {
   // sendCarouselMessage,
   getSheetData,
   sendPayWithOrange,
+  sendPayWithMoov,
   sendInteractiveProductMessage,
   sendAudio,
   sendCatalogMessage,

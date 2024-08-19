@@ -608,6 +608,11 @@ async function handleWebhookforEcommerce(
                   WA_PHONE_NUMBER_ID,
                   type.prix.toString(),
                 );
+                await utils.sendPayWithMoov(
+                  from,
+                  WA_PHONE_NUMBER_ID,
+                  type.prix.toString(),
+                );
                 await sleep(5000); // Attendre 10 secondes pour le dépôt
                 await utils.sendFlow(
                   '1532268067711776',
