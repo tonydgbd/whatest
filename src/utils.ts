@@ -725,7 +725,7 @@ async function checkPayment(
         ? '91e984af-9993-4aad-9005-f69156333e42'
         : '1c381fdb-b7aa-43e7-ae87-7dc45bc0309c',
     amount: Number(montant),
-    phonenumber: numero,
+    phonenumber: numero.replace(' ',''),
     orange: isorange,
   };
 
