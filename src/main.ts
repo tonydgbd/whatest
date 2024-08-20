@@ -702,18 +702,19 @@ async function handleWebhookforEcommerce(
                 );
                 console.log(rs);
                 if (rs.success == true) {
-                  utils.sendText(from, WA_PHONE_NUMBER_ID, 'Paiment reussie');
+                  try{
+                  await utils.sendText(from, WA_PHONE_NUMBER_ID, 'Paiment reussie');
                   const code = await eventService.createTicket(
                     conversationState.data.event.eventname,
                     conversationState.data.ticket,
                     from,
                   );
                   console.log('Code ticket', code);
-                  const { id } = await utils.uploadImage(
-                    `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
-                    WA_PHONE_NUMBER_ID,
-                  );
-                  await utils.sendImagebyId(from, WA_PHONE_NUMBER_ID, id);
+                  // const { id } = await utils.uploadImage(
+                  //   `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
+                  //   WA_PHONE_NUMBER_ID,
+                  // );
+                  await utils.sendImage(from, WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`);
                   await utils.sendText(
                     from,
                     WA_PHONE_NUMBER_ID,
@@ -730,7 +731,10 @@ async function handleWebhookforEcommerce(
                     conversationState,
                     from,
                     WA_PHONE_NUMBER_ID,
-                  );
+                  );}
+                  catch(e){
+                    console.log('err' + e);
+                  }
                 } else {
                   utils.sendText(
                     from,

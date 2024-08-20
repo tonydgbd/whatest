@@ -174,28 +174,15 @@ export class AppService {
         quantity: admin.firestore.FieldValue.increment(-1),
         participants: admin.firestore.FieldValue.arrayUnion(phonenumber),
       });
-      const userDoc = await admin
-        .firestore()
-        .collection('users')
-        .where('phoneNumber', '==', '+' + phonenumber)
-        .get();
-      if (userDoc.docs.length > 0) {
-        await userDoc.docs[0].ref
-          .collection('tickets')
-          .doc(ticket.code)
-          .set(ticket);
-        //   MyAuthController.instance.account.refresh();
-        await admin
+      await admin
           .database()
           .ref('ticket')!
           .child(ticket.code)
           .set({ active: true });
         return ticket.code;
-      } else {
-        return ticket.code;
-      }
     } catch (e) {
       console.error(e);
+      console.log(e);
     }
   }
 }
