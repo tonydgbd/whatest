@@ -508,9 +508,10 @@ async function handleWebhookforEcommerce(
                 let typetik = await eventService.getTypeTickets(eventName);
                 typetik = typetik.filter(
                   (val) =>
-                    val.hiddenAfter._seconds * 1000 <= Date.now()  &&
-                    Date.now() >= val.hiddenuntil._seconds * 1000,
+                    val.hiddenAfter && val.hiddenAfter._seconds * 1000 <= Date.now()  &&
+                    val.hiddenuntil && Date.now() >= val.hiddenuntil._seconds * 1000,
                 );
+                console.log(typetik)
 
                 await utils.sendListMessage(
                   from,
