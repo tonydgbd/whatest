@@ -506,11 +506,15 @@ async function handleWebhookforEcommerce(
                 const eventName = body.id.split('(')[1].split(')')[0];
                 console.log(eventName);
                 let typetik = await eventService.getTypeTickets(eventName);
+                console.log('avant filter');
+                console.log(typetik)
+
                 typetik = typetik.filter(
                   (val) =>
-                    val.hiddenAfter && val.hiddenAfter._seconds * 1000 <= Date.now()  &&
-                    val.hiddenuntil && Date.now() >= val.hiddenuntil._seconds * 1000,
-                );
+                    val.hiddenAfter._seconds > Date.now()/1000
+                ).filter((va)=> va.hiddenuntil._seconds < Date.now()/1000);
+                console
+                .log("apres filter ")
                 console.log(typetik)
 
                 await utils.sendListMessage(
