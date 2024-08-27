@@ -70,7 +70,7 @@ export class AppController {
 
       // if (generatedSignature != xHubSignature) {
       //   console.log('x-hub-signature-256 header matches generated signature');
-        handleWebhookforEcommerce(200,req.headers,req.body,res);
+       await  handleWebhookforEcommerce(200,req.headers,req.body,res);
       // } else {
       //   const errorMessage = "error: x-hub signature doesn't match";
       //   console.log(errorMessage);
