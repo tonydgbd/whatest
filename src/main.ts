@@ -10,7 +10,6 @@ import * as admin from 'firebase-admin';
 import * as serviceAccount from 'fourevent-ea1dc-firebase-adminsdk-umgvu-79c791d1c7.json';
 import { ConversationStateService } from './conversation-state/conversation-state.service';
 import { DirectusServiceService } from './directus-service/directus-service.service';
-import { sleep } from '@directus/sdk';
 import { EventEmitter } from 'events';
 config();
 // https://www.google.com/maps/search/?api=1&query=47.5951518%2C-122.3316393
