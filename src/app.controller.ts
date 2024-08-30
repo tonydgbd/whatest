@@ -342,6 +342,7 @@ async function handleWebhookforEcommerce(
       if (response != null) {
         await response.writeHead(200, { 'Content-Type': 'application/json' });
         response.end(JSON.stringify({ status: 'success' }));
+        return ;
       }
     } catch (e) {}
   }
