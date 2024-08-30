@@ -83,17 +83,7 @@ export class AppController {
     }
   }
 
-  @Post('/messages')
-  getMessages(req: Request) {
-    console.log(req.body);
-  }
-  @Post('/1')
-  getit(@Body() data: any) {
-    console.log(data);
-    return;
-  }
-  @Post('/0')
-  async sendPayWithOrange() {}
+ 
   @Post('/delete-row')
   async deleteRow(
     @Body() body: { sheetName: string; id: string; spreadsheetId: string },
@@ -348,13 +338,17 @@ async function handleWebhookforEcommerce(
   const bd = JSON.parse(JSON.stringify(body));
   if (bd.entry[0].changes[0].value.messages == undefined) {
     console.log('No message in webhook');
-    return;
+    try {
+      if (response != null) {
+        await response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ status: 'success' }));
+      }
+    } catch (e) {}
   }
   const from = bd.entry[0].changes[0].value.messages[0].from;
   const messageType = bd.entry[0].changes[0].value.messages[0].type;
   const from_name = bd.entry[0].changes[0].value.contacts[0].profile.name;
-  const WA_PHONE_NUMBER_ID =
-    bd.entry[0].changes[0].value.metadata.phone_number_id;
+  const WA_PHONE_NUMBER_ID =bd.entry[0].changes[0].value.metadata.phone_number_id;
   console.log(`Received message from ${from} of type ${messageType}`);
   // Récupérer l'état de la conversation de l'utilisateur
   // eslint-disable-next-line no-var
@@ -630,10 +624,7 @@ async function handleWebhookforEcommerce(
 
             handleButtonReply: async (body, from) => {
               console.log(body);
-              // {
-              //   id: 'Achat_ticket(Soirée récréative)_22660356506',
-              //   title: 'Acheter un ticket'
-              // }
+
               if (body.title == 'Acheter un ticket') {
                 const eventName = body.id.split('(')[1].split(')')[0];
                 console.log(eventName);
@@ -953,7 +944,7 @@ async function handleWebhookforEcommerce(
         WA_PHONE_NUMBER_ID,
         'Une erreur s est produite, veuillez reessayer',
       );
-      handleWebhookforEcommerce(statusCode, headers, body, response);
+     // handleWebhookforEcommerce(statusCode, headers, body, response);
     }
     try {
       if (response != null) {
