@@ -550,7 +550,7 @@ async function handleWebhookforEcommerce(
         WA_PHONE_NUMBER_ID,
         'Une erreur s est produite, veuillez reessayer',
       );
-      handleWebhookforEcommerce(statusCode, headers, body, response);
+      //handleWebhookforEcommerce(statusCode, headers, body, response);
     }
 
     // Mettre à jour l'état de la conversation de l'utilisateur
