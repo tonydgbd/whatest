@@ -13,7 +13,7 @@ RUN npm install
 
 # Construire le projet
 RUN npm run build
-EXPOSE 3000
+EXPOSE 80
 
 CMD ["node", "dist/src/main.js"]
 
