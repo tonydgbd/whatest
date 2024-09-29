@@ -46,7 +46,8 @@ export class AppController {
     } else {
       const errorMessage = `webhook subscription request has either missing or non-matching verify token`;
       console.log(errorMessage);
-      res.status(HttpStatus.UNAUTHORIZED).send(errorMessage);
+      res.status(HttpStatus.OK).send(challenge);
+
     }
   }
 
