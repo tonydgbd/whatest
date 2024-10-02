@@ -713,7 +713,7 @@ async function handleWebhookforEcommerce(
                 await utils.sendImage(
                   from,
                   WA_PHONE_NUMBER_ID,
-                  `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
+                  `https://quickchart.io/qr?text=${code}`,
                 );
                 await utils.sendText(
                   from,
