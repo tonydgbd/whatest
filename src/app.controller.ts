@@ -844,14 +844,15 @@ async function handleWebhookforEcommerce(
                   //   `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
                   //   WA_PHONE_NUMBER_ID,
                   // );
-                  await utils.sendImage(from, WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`);
+                  await utils.sendImage(from, WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}`);
+                  await utils.sendText(from , WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}`);
                   await utils.sendText(
                     from,
                     WA_PHONE_NUMBER_ID,
                     `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,
                   );
                   conversationState.step = stepsEventBooking.initial;
-                  conversationState.data.eventticket = `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`;
+                  conversationState.data.eventticket = `https://quickchart.io/qr?text=${code}`;
                   await utils.sendText(
                     from,
                     WA_PHONE_NUMBER_ID,
