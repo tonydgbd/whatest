@@ -3,7 +3,7 @@ import { createClient } from 'redis';
 @Injectable()
 export class ConversationStateService {
   redisClient = createClient({
-    url: 'redis-16687.c253.us-central1-1.gce.redns.redis-cloud.com:16687',
+    url: 'redis://default:ZyCjq3OCl8WwyA907VYeUEnKSqumFrRS@redis-16687.c253.us-central1-1.gce.redns.redis-cloud.com:16687',
   });
 
   constructor() {
