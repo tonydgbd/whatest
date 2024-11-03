@@ -219,12 +219,13 @@ type HandleMessageFunction = {
   handleText?: HandleMessageCllBack;
 };
 function handleMesage(HandleMessageFunction: HandleMessageFunction) {
+  
   switch (HandleMessageFunction.messageType) {
     case 'interactive':
       const interactiveType =
-        HandleMessageFunction.bd.entry[0].changes[0]['value']['messages'][0][
+        HandleMessageFunction.bd?.entry?.[0]?.changes?.[0]?.['value']?.['messages']?.[0]?.[
           'interactive'
-        ]['type'];
+        ]?.['type'];
       if (interactiveType === 'nfm_reply') {
         console.log('Handling nfm reply');
         if (HandleMessageFunction.handleFlowReply == null) {
@@ -549,9 +550,9 @@ async function handleWebhookforEcommerce(
       await utils.sendText(
         from,
         WA_PHONE_NUMBER_ID,
-        'Une erreur s est produite, veuillez reessayer',
+        'Cette reponse n\est pas valide, veuillez reessayer',
       );
-      //handleWebhookforEcommerce(statusCode, headers, body, response);
+      handleWebhookforEcommerce(statusCode, headers, body, response);
     }
 
     // Mettre à jour l'état de la conversation de l'utilisateur
@@ -945,9 +946,9 @@ async function handleWebhookforEcommerce(
       await utils.sendText(
         from,
         WA_PHONE_NUMBER_ID,
-        'Une erreur s est produite, veuillez reessayer',
+        'Cette reponse n\est pas valide, veuillez reessayer',
       );
-     // handleWebhookforEcommerce(statusCode, headers, body, response);
+      handleWebhookforEcommerce(statusCode, headers, body, response);
     }
     try {
       if (response != null) {
