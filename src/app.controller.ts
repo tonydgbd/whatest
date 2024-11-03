@@ -552,7 +552,7 @@ async function handleWebhookforEcommerce(
         WA_PHONE_NUMBER_ID,
         'Cette reponse n\est pas valide, veuillez reessayer',
       );
-      handleWebhookforEcommerce(statusCode, headers, body, response);
+      //handleWebhookforEcommerce(statusCode, headers, body, response);
     }
 
     // Mettre à jour l'état de la conversation de l'utilisateur
@@ -948,7 +948,7 @@ async function handleWebhookforEcommerce(
         WA_PHONE_NUMBER_ID,
         'Cette reponse n\est pas valide, veuillez reessayer',
       );
-      handleWebhookforEcommerce(statusCode, headers, body, response);
+     // handleWebhookforEcommerce(statusCode, headers, body, response);
     }
     try {
       if (response != null) {
