@@ -949,7 +949,7 @@ async function handleWebhookforEcommerce(
         WA_PHONE_NUMBER_ID,
         'Cette reponse n\est pas valide, veuillez reessayer',
       );
-      handleWebhookforEcommerce(statusCode, headers, body, response);
+     // handleWebhookforEcommerce(statusCode, headers, body, response);
     }
     try {
       if (response != null) {
