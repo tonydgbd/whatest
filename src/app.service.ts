@@ -143,6 +143,8 @@ export class AppService {
     eventname: string,
     ticketname: string,
     phonenumber: string,
+    codeparain: string | null,
+    WA_PHONE_NUMBER_ID: string,
   ) {
     //creation of ticket
     const ticket = {
@@ -184,5 +186,39 @@ export class AppService {
       console.error(e);
       console.log(e);
     }
+    // update Parrain sales
+   const ambasadeurs =  await admin.firestore().collection('ambassadeurs').where('code', '==', codeparain.trim().toLowerCase()).get();
+    if(ambasadeurs.docs.length > 0){
+      const amb = ambasadeurs.docs[0];
+      await amb.ref.update({
+        vente: admin.firestore.FieldValue.increment(1),
+        buyers: admin.firestore.FieldValue.arrayUnion(phonenumber),
+      });
+    }else{
+      console.log('no ambasadeur found');
+      //save the code in the database
+      await admin.firestore().collection('ambassadeurs').add({
+        code: codeparain.trim().toLowerCase(),
+        vente: 1,
+        buyers: [phonenumber],
+        affiliations:0,
+        nom: '',
+      }); 
+    }
+      //send Message to Organiseur when a ticket is sold
+  const orgNumber = `226${ev.data().organisateur.phoneNumber}`;
+  console.log('orgNumber', orgNumber);
+  console.log('phonenumber', phonenumber);
+
+  var message = `Un ticket a été vendu pour l'événement ${ev.data().name} au numéro ${phonenumber} \n 
+  `;
+  types.docs.forEach((doc) => {
+    message += `Nombre de ticket vendu pour ${doc.data().name}: ${doc.data().vente} \n`;
+  });
+
+  console.log('message', message);
+  await utils.sendText(orgNumber,WA_PHONE_NUMBER_ID, message);
+
   }
+
 }

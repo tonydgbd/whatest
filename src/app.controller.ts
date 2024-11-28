@@ -580,7 +580,7 @@ async function handleWebhookforEcommerce(
           await utils.sendText(
             from,
             WA_PHONE_NUMBER_ID,
-            `Bonjour ${from_name} Bienvue sur le service Billeterie de easyPass Burkina `,
+            `Bonjour ${from_name} Bienvue sur le service Billeterie de EasyPass Burkina `,
           );
           await sleep(1000);
 
@@ -707,6 +707,8 @@ async function handleWebhookforEcommerce(
                   conversationState.data.event.eventname,
                   type.name,
                   from,
+                  null,
+                  WA_PHONE_NUMBER_ID
                 );
                 console.log('Code ticket', code);
                 // const { id } = await utils.uploadImage(
@@ -715,7 +717,7 @@ async function handleWebhookforEcommerce(
                 await utils.sendImage(
                   from,
                   WA_PHONE_NUMBER_ID,
-                  `https://quickchart.io/qr?text=${code}`,
+                  `https://quickchart.io/qr?text=${code}&centerImageUrl=https://firebasestorage.googleapis.com/v0/b/fourevent-ea1dc.appspot.com/o/don't_delete%2FLogo%20EasyPass.png?alt=media&token=2ef66c2a-7417-49d2-80ce-a34e794f2b6b`,
                 );
                 await utils.sendText(
                   from,
@@ -747,7 +749,7 @@ async function handleWebhookforEcommerce(
                 );
                 await sleep(5000); // Attendre 10 secondes pour le dépôt
                 await utils.sendFlow(
-                  '1532268067711776',
+                  '1250969692781092',
                   from,
                   'Formulaire de validation du paiment',
                   'Taper votre numero sans l indicatif ',
@@ -823,6 +825,7 @@ async function handleWebhookforEcommerce(
             handleFlowReply: async (body, from) => {
               console.log(body);
               const dt = JSON.parse(body.response_json);
+              const codeparrain = dt.parrain;
               const isorange: boolean = dt.reseau == '0_ORANGE_Money';
               try {
                 const rs = await utils.checkPayment(
@@ -840,21 +843,23 @@ async function handleWebhookforEcommerce(
                     conversationState.data.event.eventname,
                     conversationState.data.ticket,
                     from,
+                    codeparrain,
+                    WA_PHONE_NUMBER_ID
                   );
                   console.log('Code ticket', code);
                   // const { id } = await utils.uploadImage(
                   //   `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
                   //   WA_PHONE_NUMBER_ID,
                   // );
-                  await utils.sendImage(from, WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}`);
-                  await utils.sendText(from , WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}`);
+                  await utils.sendImage(from, WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}&centerImageUrl=https://firebasestorage.googleapis.com/v0/b/fourevent-ea1dc.appspot.com/o/don't_delete%2FLogo%20EasyPass.png?alt=media&token=2ef66c2a-7417-49d2-80ce-a34e794f2b6b`);
+                  await utils.sendText(from , WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}&centerImageUrl=https://firebasestorage.googleapis.com/v0/b/fourevent-ea1dc.appspot.com/o/don't_delete%2FLogo%20EasyPass.png?alt=media&token=2ef66c2a-7417-49d2-80ce-a34e794f2b6b`);
                   await utils.sendText(
                     from,
                     WA_PHONE_NUMBER_ID,
                     `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,
                   );
                   conversationState.step = stepsEventBooking.initial;
-                  conversationState.data.eventticket = `https://quickchart.io/qr?text=${code}`;
+                  conversationState.data.eventticket = `https://quickchart.io/qr?text=${code}&centerImageUrl=https://firebasestorage.googleapis.com/v0/b/fourevent-ea1dc.appspot.com/o/don't_delete%2FLogo%20EasyPass.png?alt=media&token=2ef66c2a-7417-49d2-80ce-a34e794f2b6b`;
                   await utils.sendText(
                     from,
                     WA_PHONE_NUMBER_ID,
@@ -908,7 +913,7 @@ async function handleWebhookforEcommerce(
               console.log(body);
               if (body.body.toLowerCase().includes('/vr')) {
                 await utils.sendFlow(
-                  '1532268067711776',
+                  '1250969692781092',
                   from,
                   'Formulaire de validation du paiment',
                   'Taper votre numero sans l indicatif ',
