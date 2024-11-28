@@ -146,6 +146,7 @@ export class AppService {
     codeparain: string | null,
     WA_PHONE_NUMBER_ID: string,
   ) {
+    var code = '';
     try{
     //creation of ticket
     const ticket = {
@@ -182,13 +183,14 @@ export class AppService {
           .ref('ticket')!
           .child(ticket.code)
           .set({ active: true });
-        return ticket.code;
+          console.log('ticket created');
+          code = ticket.code;
     } catch (e) {
       console.error(e);
       console.log(e);
     }
     // update Parrain sales
-   const ambasadeurs =  await admin.firestore().collection('ambassadeurs').where('code', '==', codeparain.trim().toLowerCase()).get();
+   const ambasadeurs =  await admin.firestore().collection('ambassadeurs').where('code', '==', codeparain.trim()).get();
     if(ambasadeurs.docs.length > 0){
       console.log('ambasadeurs found');
       console.log('ambasadeurs', ambasadeurs.docs[0].data());
@@ -222,9 +224,13 @@ export class AppService {
 
   console.log('message', message);
   await utils.sendText(orgNumber,WA_PHONE_NUMBER_ID, message);
+  return ticket.code;
+
 }catch(e){
   console.error(e);
   console.log(e);
+  return code;
+
 }
   }
 
