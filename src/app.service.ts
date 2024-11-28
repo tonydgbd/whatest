@@ -146,6 +146,7 @@ export class AppService {
     codeparain: string | null,
     WA_PHONE_NUMBER_ID: string,
   ) {
+    try{
     //creation of ticket
     const ticket = {
       code: '',
@@ -204,6 +205,7 @@ export class AppService {
         affiliations:0,
         nom: '',
       }); 
+    
     }
       //send Message to Organiseur when a ticket is sold
   const orgNumber = `226${ev.data().organisateur.phoneNumber}`;
@@ -218,7 +220,10 @@ export class AppService {
 
   console.log('message', message);
   await utils.sendText(orgNumber,WA_PHONE_NUMBER_ID, message);
-
+}catch(e){
+  console.error(e);
+  console.log(e);
+}
   }
 
 }

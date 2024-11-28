@@ -940,7 +940,21 @@ async function handleWebhookforEcommerce(
             },
           });
           break;
-      }
+      
+        case stepsEventBooking.end_of_conversation:
+          conversationState.step = stepsEventBooking.initial;
+          await conversationService.updateConversationState(
+            from,
+            conversationState,
+            WA_PHONE_NUMBER_ID,
+          );
+          await utils.sendText(
+            from,
+            WA_PHONE_NUMBER_ID,
+            'Merci d avoir fait confiance a EasyPass, Bonne Continuation !! ',
+          );
+          break;
+        }
     } catch (e) {
       console.log('Error during ', e);
       conversationState.step = stepsEventBooking.initial;
