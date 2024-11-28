@@ -717,7 +717,7 @@ async function handleWebhookforEcommerce(
                 await utils.sendImage(
                   from,
                   WA_PHONE_NUMBER_ID,
-                  `https://quickchart.io/qr?text=${code}&centerImageUrl=https://firebasestorage.googleapis.com/v0/b/fourevent-ea1dc.appspot.com/o/don't_delete%2FLogo%20EasyPass.png?alt=media&token=2ef66c2a-7417-49d2-80ce-a34e794f2b6b`,
+                  `https://quickchart.io/qr?text=${code}&caption=EASYPASS_TICKET&captionFontFamily=mono&captionFontSize=20`,
                 );
                 await utils.sendText(
                   from,
@@ -839,6 +839,7 @@ async function handleWebhookforEcommerce(
                 if (rs.success == true) {
                   try{
                   await utils.sendText(from, WA_PHONE_NUMBER_ID, 'Paiment reussie');
+                  console.log('params', conversationState.data.event.eventname, conversationState.data.ticket, from, codeparrain, WA_PHONE_NUMBER_ID);
                   const code = await eventService.createTicket(
                     conversationState.data.event.eventname,
                     conversationState.data.ticket,
@@ -851,15 +852,15 @@ async function handleWebhookforEcommerce(
                   //   `https://quickchart.io/qr?text=${code}&ecLevel=H&margin=2&size=500&centerImageUrl=https%3A%2F%2Feasypass-bf.com%2Fimages%2Fupload%2F667c2fb052d3e.png`,
                   //   WA_PHONE_NUMBER_ID,
                   // );
-                  await utils.sendImage(from, WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}&centerImageUrl=https://firebasestorage.googleapis.com/v0/b/fourevent-ea1dc.appspot.com/o/don't_delete%2FLogo%20EasyPass.png?alt=media&token=2ef66c2a-7417-49d2-80ce-a34e794f2b6b`);
-                  await utils.sendText(from , WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}&centerImageUrl=https://firebasestorage.googleapis.com/v0/b/fourevent-ea1dc.appspot.com/o/don't_delete%2FLogo%20EasyPass.png?alt=media&token=2ef66c2a-7417-49d2-80ce-a34e794f2b6b`);
+                  await utils.sendImage(from, WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}&caption=EASYPASS_TICKET&captionFontFamily=mono&captionFontSize=20`);
+                  await utils.sendText(from , WA_PHONE_NUMBER_ID, `https://quickchart.io/qr?text=${code}&caption=EASYPASS_TICKET&captionFontFamily=mono&captionFontSize=20`);
                   await utils.sendText(
                     from,
                     WA_PHONE_NUMBER_ID,
                     `Il est important de garder ce code Qr car il constitue votre tikcet et sera scanner au porte de l'evenement , veuiller ne pas le partager carr chaque tikcet est unique et sera scanner dans le cas ou le ticket a ete partager il sera invalide`,
                   );
                   conversationState.step = stepsEventBooking.initial;
-                  conversationState.data.eventticket = `https://quickchart.io/qr?text=${code}&centerImageUrl=https://firebasestorage.googleapis.com/v0/b/fourevent-ea1dc.appspot.com/o/don't_delete%2FLogo%20EasyPass.png?alt=media&token=2ef66c2a-7417-49d2-80ce-a34e794f2b6b`;
+                  conversationState.data.eventticket = `https://quickchart.io/qr?text=${code}&caption=EASYPASS_TICKET&captionFontFamily=mono&captionFontSize=20`;
                   await utils.sendText(
                     from,
                     WA_PHONE_NUMBER_ID,

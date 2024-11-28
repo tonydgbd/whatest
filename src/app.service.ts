@@ -190,6 +190,8 @@ export class AppService {
     // update Parrain sales
    const ambasadeurs =  await admin.firestore().collection('ambassadeurs').where('code', '==', codeparain.trim().toLowerCase()).get();
     if(ambasadeurs.docs.length > 0){
+      console.log('ambasadeurs found');
+      console.log('ambasadeurs', ambasadeurs.docs[0].data());
       const amb = ambasadeurs.docs[0];
       await amb.ref.update({
         vente: admin.firestore.FieldValue.increment(1),
