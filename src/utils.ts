@@ -264,18 +264,17 @@ async function request(data: any, WA_PHONE_NUMBER_ID: string) {
     url: `https://graph.facebook.com/${CLOUD_API_VERSION}/${WA_PHONE_NUMBER_ID}/messages`,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + CLOUD_API_ACCESS_TOKEN,
+      Authorization: `Bearer ${CLOUD_API_ACCESS_TOKEN}`,
     },
-    data: data,
+    data,
   };
 
-  axios
+  return axios
     .request(config)
-    .then((response) => {
-      return response;
-    })
+    .then((response) => response)
     .catch((error) => {
-      throw error;
+      console.error('Error sending message:', error);
+      // throw error;
     });
 }
 function sendAudio(

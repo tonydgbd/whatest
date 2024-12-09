@@ -592,6 +592,7 @@ async function handleWebhookforEcommerce(
           console.log(response);
           await utils.sendText(from, WA_PHONE_NUMBER_ID, response);
           const promises = events.map(async (event) => {
+            console.log("Case of ", event.name);
             const bodymsg = `${event.name} \n ${event.description}  \nDate debut: ${new Date(event.startDate._seconds * 1000).toLocaleDateString()} \nDate de fin: ${new Date(event.endDate._seconds * 1000).toLocaleDateString()} \n Lieu :${event.nomLieu}`;
             return utils.sendButtonMessage(
               from,
