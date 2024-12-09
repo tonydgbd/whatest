@@ -585,12 +585,12 @@ async function handleWebhookforEcommerce(
           await sleep(1000);
 
           // Si vous avez besoin de mettre à jour l'array original
-          let response = `Voici les prochains évènements à venir:\n`;
+          let responseText = `Voici les prochains évènements à venir:\n`;
           events.forEach((event) => {
-            response += `- ${event.name}\n`;
+            responseText += `- ${event.name}\n`;
           });
-          console.log(response);
-          await utils.sendText(from, WA_PHONE_NUMBER_ID, response);
+          console.log(responseText);
+          await utils.sendText(from, WA_PHONE_NUMBER_ID, responseText);
           const promises = events.map(async (event) => {
             console.log("Case of ", event.name);
             const bodymsg = `${event.name} \n ${event.description}  \nDate debut: ${new Date(event.startDate._seconds * 1000).toLocaleDateString()} \nDate de fin: ${new Date(event.endDate._seconds * 1000).toLocaleDateString()} \n Lieu :${event.nomLieu}`;
