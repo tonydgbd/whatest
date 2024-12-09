@@ -964,7 +964,9 @@ async function handleWebhookforEcommerce(
               conversationState,
               WA_PHONE_NUMBER_ID,
             );
-            handleWebhookforEcommerce(statusCode, headers, body, response, true);
+            if(isAReapet != true){
+              handleWebhookforEcommerce(statusCode, headers, body, response, true);
+            }
         
         }
        
