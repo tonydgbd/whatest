@@ -963,15 +963,15 @@ async function handleWebhookforEcommerce(
       console.log('Error during ', e);
       conversationState.step = conversationState.step;
         conversationState.step = stepsEventBooking.initial;
+        await conversationService.updateConversationState(
+          from,
+          conversationState,
+          WA_PHONE_NUMBER_ID,
+        );
       await utils.sendText(
         from,
         WA_PHONE_NUMBER_ID,
         "D\'esol\'e, je n'ai pas compris votre message. Pouvez-vous me le r\'ep\'eter s'il vous plaît ?",
-      );
-      await conversationService.updateConversationState(
-        from,
-        conversationState,
-        WA_PHONE_NUMBER_ID,
       );
       if(isAReapet != true){
         handleWebhookforEcommerce(statusCode, headers, body, response, true);
