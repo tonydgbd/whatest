@@ -310,6 +310,7 @@ async function handleWebhookforEcommerce(
   headers: IncomingHttpHeaders,
   body?: WebhookObject,
   response?: ServerResponse,
+  isAReapet?: boolean,
 ) {
   if (!body) {
     console.log('No body in webhook');
@@ -960,18 +961,25 @@ async function handleWebhookforEcommerce(
         }
     } catch (e) {
       console.log('Error during ', e);
-      conversationState.step = stepsEventBooking.initial;
-      await conversationService.updateConversationState(
-        from,
-        conversationState,
-        WA_PHONE_NUMBER_ID,
-      );
+      conversationState.step = conversationState.step;
+      if(conversationState.step != stepsEventBooking.payement_failed && conversationState.step != stepsEventBooking.end_of_conversation){
+        conversationState.step = conversationState.step - 1;
+      } else {
+        conversationState.step = stepsEventBooking.initial;
+      }
       await utils.sendText(
         from,
         WA_PHONE_NUMBER_ID,
         "D\'esol\'e, je n'ai pas compris votre message. Pouvez-vous me le r\'ep\'eter s'il vous plaît ?",
       );
-     // handleWebhookforEcommerce(statusCode, headers, body, response);
+      await conversationService.updateConversationState(
+        from,
+        conversationState,
+        WA_PHONE_NUMBER_ID,
+      );
+      if(isAReapet != true){
+        handleWebhookforEcommerce(statusCode, headers, body, response, true);
+      }
     }
     try {
       if (response != null) {
