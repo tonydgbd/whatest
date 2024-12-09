@@ -962,11 +962,7 @@ async function handleWebhookforEcommerce(
     } catch (e) {
       console.log('Error during ', e);
       conversationState.step = conversationState.step;
-      if(conversationState.step != stepsEventBooking.payement_failed && conversationState.step != stepsEventBooking.end_of_conversation){
-        conversationState.step = conversationState.step - 1;
-      } else {
         conversationState.step = stepsEventBooking.initial;
-      }
       await utils.sendText(
         from,
         WA_PHONE_NUMBER_ID,
