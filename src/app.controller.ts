@@ -591,9 +591,9 @@ async function handleWebhookforEcommerce(
           });
           console.log(response);
           await utils.sendText(from, WA_PHONE_NUMBER_ID, response);
-          events.forEach(async (event) => {
+          const promises = events.map(async (event) => {
             const bodymsg = `${event.name} \n ${event.description}  \nDate debut: ${new Date(event.startDate._seconds * 1000).toLocaleDateString()} \nDate de fin: ${new Date(event.endDate._seconds * 1000).toLocaleDateString()} \n Lieu :${event.nomLieu}`;
-            await utils.sendButtonMessage(
+            return utils.sendButtonMessage(
               from,
               WA_PHONE_NUMBER_ID,
               bodymsg,
@@ -612,6 +612,7 @@ async function handleWebhookforEcommerce(
               },
             );
           });
+          await Promise.all(promises);
           conversationState.step = stepsEventBooking.awaiting_event_selection;
           await conversationService.updateConversationState(
             from,
