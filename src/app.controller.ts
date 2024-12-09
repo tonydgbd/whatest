@@ -329,7 +329,6 @@ async function handleWebhookforEcommerce(
     initial,
     awaiting_event_selection,
     awaiting_ticket_selection,
-    awaiting_quantity_selection,
     awaiting_payment_confirmation,
     end_of_conversation,
     payement_failed,
@@ -944,7 +943,6 @@ async function handleWebhookforEcommerce(
             },
           });
           break;
-      
         case stepsEventBooking.end_of_conversation:
           conversationState.step = stepsEventBooking.initial;
           await conversationService.updateConversationState(
@@ -958,7 +956,18 @@ async function handleWebhookforEcommerce(
             'Merci d avoir fait confiance a EasyPass, Bonne Continuation !! ',
           );
           break;
+          default:
+            console.log('Unhandled message step: ', conversationState.step);
+            conversationState.step = stepsEventBooking.initial;
+            await conversationService.updateConversationState(
+              from,
+              conversationState,
+              WA_PHONE_NUMBER_ID,
+            );
+            handleWebhookforEcommerce(statusCode, headers, body, response, true);
+        
         }
+       
     } catch (e) {
       console.log('Error during ', e);
       conversationState.step = conversationState.step;
