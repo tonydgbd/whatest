@@ -968,7 +968,7 @@ async function handleWebhookforEcommerce(
       await utils.sendText(
         from,
         WA_PHONE_NUMBER_ID,
-        'Cette reponse n\est pas valide, veuillez reessayer',
+        "D\'esol\'e, je n'ai pas compris votre message. Pouvez-vous me le r\'ep\'eter s'il vous plaît ?",
       );
      // handleWebhookforEcommerce(statusCode, headers, body, response);
     }
